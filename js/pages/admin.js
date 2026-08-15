@@ -493,11 +493,10 @@ Pages.Admin = (function () {
             <div class="form-group">
               <label class="form-label" for="ai-model-select">Model Version</label>
               <select class="form-select" id="ai-model-select">
-                <option value="gemini-2.5-flash" ${config.model === 'gemini-2.5-flash' || !config.model || config.model === 'gemini-3.5-flash' ? 'selected' : ''}>gemini-2.5-flash (Recommended · Fast &amp; Accurate)</option>
-                <option value="gemini-2.0-flash" ${config.model === 'gemini-2.0-flash' ? 'selected' : ''}>gemini-2.0-flash (Ultra-fast latency)</option>
-                <option value="gemini-1.5-flash" ${config.model === 'gemini-1.5-flash' ? 'selected' : ''}>gemini-1.5-flash (Stable)</option>
-                <option value="gemini-1.5-pro" ${config.model === 'gemini-1.5-pro' ? 'selected' : ''}>gemini-1.5-pro (High intelligence)</option>
+                <option value="gemini-2.5-flash" ${!config.model || config.model === 'gemini-2.5-flash' || config.model === 'gemini-3.5-flash' || config.model === 'gemini-2.0-flash' || config.model === 'gemini-1.5-flash' ? 'selected' : ''}>gemini-2.5-flash — Recommended · Fastest &amp; Accurate</option>
+                <option value="gemini-2.5-pro" ${config.model === 'gemini-2.5-pro' || config.model === 'gemini-1.5-pro' ? 'selected' : ''}>gemini-2.5-pro — Most Capable · Deep Reasoning</option>
               </select>
+              <span style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px;display:block">Only the latest Gemini 2.5 generation models are supported.</span>
             </div>
 
             <!-- Enable / Disable Switch -->
