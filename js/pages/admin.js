@@ -493,10 +493,10 @@ Pages.Admin = (function () {
             <div class="form-group">
               <label class="form-label" for="ai-model-select">Model Version</label>
               <select class="form-select" id="ai-model-select">
-                <option value="gemini-2.5-flash" ${!config.model || config.model === 'gemini-2.5-flash' || config.model === 'gemini-3.5-flash' || config.model === 'gemini-2.0-flash' || config.model === 'gemini-1.5-flash' ? 'selected' : ''}>gemini-2.5-flash — Recommended · Fastest &amp; Accurate</option>
-                <option value="gemini-2.5-pro" ${config.model === 'gemini-2.5-pro' || config.model === 'gemini-1.5-pro' ? 'selected' : ''}>gemini-2.5-pro — Most Capable · Deep Reasoning</option>
+                <option value="gemini-3.5-flash" ${!config.model || config.model === 'gemini-3.5-flash' || config.model === 'gemini-2.5-flash' || config.model === 'gemini-2.0-flash' || config.model === 'gemini-1.5-flash' ? 'selected' : ''}>gemini-3.5-flash — Recommended · Fastest &amp; Accurate</option>
+                <option value="gemini-3.5-pro" ${config.model === 'gemini-3.5-pro' || config.model === 'gemini-2.5-pro' || config.model === 'gemini-1.5-pro' ? 'selected' : ''}>gemini-3.5-pro — Most Capable · Deep Reasoning</option>
               </select>
-              <span style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px;display:block">Only the latest Gemini 2.5 generation models are supported.</span>
+              <span style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px;display:block">Only the latest Gemini 3.5 generation models are supported.</span>
             </div>
 
             <!-- Enable / Disable Switch -->
@@ -641,7 +641,7 @@ Pages.Admin = (function () {
 
     window.saveApiKey = function() {
       const key = document.getElementById('ai-key-input')?.value?.trim() || '';
-      const model = document.getElementById('ai-model-select')?.value || 'gemini-2.5-flash';
+      const model = document.getElementById('ai-model-select')?.value || 'gemini-3.5-flash';
       const enabled = Boolean(document.getElementById('ai-enable-switch')?.checked);
 
       if (window.AI) {
@@ -670,7 +670,7 @@ Pages.Admin = (function () {
     window.clearAiKey = function() {
       if (confirm('Are you sure you want to clear the Gemini API key?')) {
         if (window.AI) {
-          AI.saveConfig({ apiKey: '', model: 'gemini-2.5-flash', enabled: false });
+          AI.saveConfig({ apiKey: '', model: 'gemini-3.5-flash', enabled: false });
         }
         renderAiSettings();
         const badge = document.getElementById('sb-ai-badge');
@@ -684,7 +684,7 @@ Pages.Admin = (function () {
 
     window.testAiConnection = async function() {
       const key = document.getElementById('ai-key-input')?.value?.trim() || (window.AI ? AI.getApiKey() : '');
-      const model = document.getElementById('ai-model-select')?.value || 'gemini-2.5-flash';
+      const model = document.getElementById('ai-model-select')?.value || 'gemini-3.5-flash';
       const resultBox = document.getElementById('ai-test-result');
       const btn = document.getElementById('btn-test-ai');
 

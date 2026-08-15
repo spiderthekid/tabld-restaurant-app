@@ -12,7 +12,7 @@ window.AI = (function () {
     } catch(e) {}
     return {
       apiKey: '',
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.5-flash',
       enabled: false
     };
   }
@@ -301,7 +301,7 @@ User Taste: Favorite Cuisines: ${(userProfile?.cuisines || []).join(', ')}, Budg
       saveConfig(cfg);
       return cfg;
     },
-    getModel: () => getConfig().model || 'gemini-2.5-flash',
+    getModel: () => getConfig().model || 'gemini-3.5-flash',
     setModel: (model) => {
       const cfg = getConfig();
       cfg.model = model;
