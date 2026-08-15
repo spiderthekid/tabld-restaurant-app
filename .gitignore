@@ -25,3 +25,9 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# System files
+*.bak
+*.tmp
+*.log
+local-server.js
