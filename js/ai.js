@@ -69,7 +69,7 @@ window.AI = (function () {
   }
 
   // ─── Test API Connection ──────────────────────────────────────
-  async function testConnection(apiKey, model = 'gemini-2.0-flash') {
+  async function testConnection(apiKey, model = 'gemini-3.5-flash') {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const response = await fetch(url, {
       method: 'POST',

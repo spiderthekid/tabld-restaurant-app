@@ -442,7 +442,7 @@ Pages.Admin = (function () {
 
   function renderAiSettings() {
     console.log('[Admin] renderAiSettings called');
-    let config = { apiKey: '', model: 'gemini-2.5-flash', enabled: false };
+    let config = { apiKey: '', model: 'gemini-3.5-flash', enabled: false };
     let isAct = false;
     try {
       if (window.AI) {
