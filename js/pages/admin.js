@@ -441,8 +441,15 @@ Pages.Admin = (function () {
   }
 
   function renderAiSettings() {
-    const config = window.AI ? AI.getConfig() : { apiKey: '', model: 'gemini-2.5-flash', enabled: false };
-    const isAct = window.AI && AI.isEnabled();
+    console.log('[Admin] renderAiSettings called');
+    let config = { apiKey: '', model: 'gemini-2.5-flash', enabled: false };
+    let isAct = false;
+    try {
+      if (window.AI) {
+        config = AI.getConfig() || config;
+        isAct = AI.isEnabled();
+      }
+    } catch(e) { console.warn('[Admin] AI.getConfig error:', e); }
 
     document.getElementById('admin-content').innerHTML = `
       <div class="animate-fade-up">
