@@ -1,0 +1,27 @@
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows image caching databases
+ehthumbs.db
+ehthumbs_vista.db
+Thumbs.db
+
+# System files
+*.bak
+*.tmp
+*.log
+
+# Editor configurations (optional to ignore)
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

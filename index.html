@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Tabld — Discover curated hidden gem restaurants and make reservations. No sponsored results. Just the best tables in Chennai.">
+  <meta name="theme-color" content="#09090B">
+  <meta property="og:title" content="Tabld — Find Your Next Favourite Table">
+  <meta property="og:description" content="Curated restaurant discovery platform for discerning diners.">
+  <meta property="og:type" content="website">
+  <title>Tabld — Find Your Next Favourite Table</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+
+  <!-- Favicon (inline SVG) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>">
+
+  <style>
+    /* Critical loading state */
+    #loading-screen {
+      position: fixed; inset: 0;
+      background: #09090B;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 1.5rem;
+      z-index: 9999;
+      transition: opacity 0.4s ease;
+    }
+    #loading-screen.hidden { opacity: 0; pointer-events: none; display: none !important; }
+    #loading-logo {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 3.5rem;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, #F59240, #D4A832);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    #loading-spinner {
+      width: 32px; height: 32px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #E8732A;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- Loading screen -->
+  <div id="loading-screen" aria-hidden="true" role="status">
+    <div id="loading-logo">Tabld</div>
+    <div id="loading-spinner"></div>
+  </div>
+
+  <!-- Fixed Navigation -->
+  <nav id="nav" class="nav" role="navigation" aria-label="Main navigation"></nav>
+
+  <!-- SPA Root -->
+  <div id="app" role="main"></div>
+
+  <!-- Toast container (injected by Components) -->
+
+  <!-- ─── JavaScript — Order matters! ──────────────────────── -->
+
+  <!-- 0. Supabase SDK CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- 1. Supabase Client Init -->
+  <script src="js/supabase-client.js"></script>
+
+  <!-- 2. Database Layer (Supabase PostgreSQL) -->
+  <script src="js/db-supabase.js"></script>
+
+  <!-- 3. Auth (Supabase Auth) -->
+  <script src="js/auth.js"></script>
+
+  <!-- 4. AI & Recommendation Engines -->
+  <script src="js/ai.js"></script>
+  <script src="js/recommendations.js"></script>
+
+  <!-- 5. Shared components (depends on auth, ai, recommendations) -->
+  <script src="js/components.js"></script>
+
+  <!-- 6. Pages (depend on db, auth, components, ai) -->
+  <script src="js/pages/auth-pages.js"></script>
+  <script src="js/pages/onboarding.js"></script>
+  <script src="js/pages/home.js"></script>
+  <script src="js/pages/discover.js"></script>
+  <script src="js/pages/restaurant.js"></script>
+  <script src="js/pages/profile.js"></script>
+  <script src="js/pages/owner.js"></script>
+  <script src="js/pages/admin.js"></script>
+
+  <!-- 7. Router (depends on pages) -->
+  <script src="js/router.js"></script>
+
+  <!-- 8. App Boot -->
+  <script>
+    async function bootApp() {
+      if (window._appBooted) return;
+      window._appBooted = true;
+
+      const loading = document.getElementById('loading-screen');
+      const hideLoading = () => {
+        if (loading && !loading.classList.contains('hidden')) {
+          loading.classList.add('hidden');
+          setTimeout(() => { if (loading.parentNode) loading.remove(); }, 400);
+        }
+      };
+
+      // 1. Initialize Supabase Auth Session
+      if (window.Auth && Auth.init) {
+        try {
+          await Auth.init();
+        } catch (e) {
+          console.warn('[TABLD] Auth init warning:', e);
+        }
+      }
+
+      // 2. Pre-fetch DB Cache from Supabase
+      if (window.DB && DB.init) {
+        try {
+          await DB.init();
+        } catch (e) {
+          console.warn('[TABLD] DB init warning:', e);
+        }
+      }
+
+      // 3. Render Navigation
+      if (window.Components && Components.renderNav) {
+        Components.renderNav();
+      }
+
+      // 4. Initialize Router
+      if (window.Router) {
+        Router.init();
+      }
+
+      // 5. Hide Loading Screen
+      if (document.fonts && document.fonts.ready) {
+        Promise.race([
+          document.fonts.ready,
+          new Promise(res => setTimeout(res, 500))
+        ]).then(hideLoading).catch(hideLoading);
+      } else {
+        hideLoading();
+      }
+
+      // Failsafe
+      setTimeout(hideLoading, 800);
+    }
+
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', bootApp);
+    } else {
+      bootApp();
+    }
+
+    // Keyboard accessibility: handle Escape key globally
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (window.Components) {
+          Components.closeModal();
+          Components.closeLightbox();
+        }
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (mobileMenu) mobileMenu.classList.remove('open');
+      }
+    });
+
+    // Skip to main content link
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Tab' && !document.querySelector('#skip-link')) {
+        const skip = document.createElement('a');
+        skip.id = 'skip-link';
+        skip.href = '#app';
+        skip.textContent = 'Skip to main content';
+        skip.style.cssText = 'position:fixed;top:-100%;left:var(--sp-4);z-index:9999;background:var(--primary);color:white;padding:var(--sp-3) var(--sp-5);border-radius:var(--r-md);font-weight:600;transition:top 0.2s;';
+        skip.addEventListener('focus', () => skip.style.top = 'var(--sp-4)');
+        skip.addEventListener('blur', () => skip.style.top = '-100%');
+        document.body.prepend(skip);
+      }
+    });
+  </script>
+
+</body>
+</html>
