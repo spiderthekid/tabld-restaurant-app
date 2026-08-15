@@ -1,9 +1,0 @@
-{
-  "name": "tabld-restaurant-app",
-  "version": "1.0.0",
-  "description": "Tabld Restaurant Discovery & Reservation App",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  }
-}
