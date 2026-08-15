@@ -16,6 +16,7 @@ Thumbs.db
 *.bak
 *.tmp
 *.log
+local-server.js
 
 # Editor configurations (optional to ignore)
 .vscode/

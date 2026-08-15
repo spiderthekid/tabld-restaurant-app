@@ -293,6 +293,27 @@ User Taste: Favorite Cuisines: ${(userProfile?.cuisines || []).join(', ')}, Budg
   return {
     getConfig,
     saveConfig,
+    getApiKey: () => getConfig().apiKey || '',
+    setApiKey: (key) => {
+      const cfg = getConfig();
+      cfg.apiKey = (key || '').trim();
+      if (cfg.apiKey.length > 10) cfg.enabled = true;
+      saveConfig(cfg);
+      return cfg;
+    },
+    getModel: () => getConfig().model || 'gemini-2.5-flash',
+    setModel: (model) => {
+      const cfg = getConfig();
+      cfg.model = model;
+      saveConfig(cfg);
+      return cfg;
+    },
+    setEnabled: (val) => {
+      const cfg = getConfig();
+      cfg.enabled = Boolean(val);
+      saveConfig(cfg);
+      return cfg;
+    },
     isEnabled,
     testConnection,
     parseNaturalLanguageIntent,

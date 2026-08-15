@@ -43,7 +43,7 @@ Pages.Admin = (function () {
             </button>
             <button class="sidebar-item" id="sb-ai" onclick="adminSection('ai')" aria-label="API Key & Engine Configuration">
               <span class="sidebar-icon">🔑</span> API Key &amp; Engine
-              <span class="badge ${window.AI && AI.isEnabled() ? 'badge-approved' : 'badge-outline'}" style="margin-left:auto;font-size:9px">
+              <span id="sb-ai-badge" class="badge ${window.AI && AI.isEnabled() ? 'badge-approved' : 'badge-outline'}" style="margin-left:auto;font-size:9px">
                 ${window.AI && AI.isEnabled() ? 'Active' : 'Off'}
               </span>
             </button>
@@ -60,6 +60,8 @@ Pages.Admin = (function () {
       </div>
     `;
 
+    _bindAdminActions();
+
     window.adminSection = async function(section) {
       _section = section;
       document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
@@ -74,7 +76,25 @@ Pages.Admin = (function () {
         reservations: renderReservations,
         ai: renderAiSettings
       };
-      if (map[section]) await map[section]();
+      if (map[section]) {
+        try {
+          await map[section]();
+        } catch(err) {
+          console.error(`Error rendering admin section '${section}':`, err);
+          const content = document.getElementById('admin-content');
+          if (content) {
+            content.innerHTML = `
+              <div class="animate-fade-up" style="padding:var(--sp-6)">
+                <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:var(--r-xl);padding:var(--sp-6)">
+                  <h3 style="color:var(--danger);margin-bottom:var(--sp-2)">Error loading section</h3>
+                  <p style="font-size:var(--text-sm);color:var(--text-secondary)">${err.message || err}</p>
+                  <button class="btn btn-primary btn-sm" onclick="adminSection('${section}')" style="margin-top:var(--sp-4)">Try Again</button>
+                </div>
+              </div>
+            `;
+          }
+        }
+      }
     };
 
     await adminSection('overview');
@@ -421,20 +441,144 @@ Pages.Admin = (function () {
   }
 
   function renderAiSettings() {
+    const config = window.AI ? AI.getConfig() : { apiKey: '', model: 'gemini-2.5-flash', enabled: false };
+    const isAct = window.AI && AI.isEnabled();
+
     document.getElementById('admin-content').innerHTML = `
       <div class="animate-fade-up">
-        <div class="page-header">
-          <h1>Gemini AI Configuration</h1>
-          <p>Configure natural language intent parsing and recommendation engines.</p>
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:var(--sp-3)">
+          <div>
+            <h1>Gemini AI &amp; Engine Configuration</h1>
+            <p>Configure Google Gemini API integration for natural language discovery and smart recommendations.</p>
+          </div>
+          <div id="ai-engine-status-pill" class="badge ${isAct ? 'badge-approved' : 'badge-outline'}" style="font-size:var(--text-xs);padding:6px 14px;border-radius:var(--r-full);display:flex;align-items:center;gap:6px">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${isAct ? '#22c55e' : '#94a3b8'}"></span>
+            ${isAct ? 'AI Engine Active' : 'AI Engine Inactive / Fallback Active'}
+          </div>
         </div>
 
-        <div class="booking-widget" style="max-width:560px">
-          <div class="form-group" style="margin-bottom:var(--sp-4)">
-            <label class="form-label" for="ai-key-input">Google Gemini API Key</label>
-            <input class="form-input" id="ai-key-input" type="password" value="${window.AI ? AI.getApiKey() || '' : ''}" placeholder="AIzaSy...">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:var(--sp-6);margin-bottom:var(--sp-6)">
+          
+          <!-- API Configuration Card -->
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-xl);padding:var(--sp-6);display:flex;flex-direction:column;gap:var(--sp-4)">
+            <div style="display:flex;align-items:center;gap:var(--sp-3);padding-bottom:var(--sp-3);border-bottom:1px solid var(--border)">
+              <div style="width:36px;height:36px;border-radius:var(--r-md);background:rgba(232,115,42,0.12);color:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:18px">🔑</div>
+              <div>
+                <h3 style="font-family:var(--font-display);font-size:var(--text-xl);color:var(--text);margin:0">API Credentials</h3>
+                <p style="font-size:var(--text-xs);color:var(--text-muted);margin:0">Enter your Google AI Studio API Key</p>
+              </div>
+            </div>
+
+            <!-- API Key Input -->
+            <div class="form-group">
+              <label class="form-label" for="ai-key-input" style="display:flex;justify-content:space-between;align-items:center">
+                <span>Google Gemini API Key</span>
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style="font-size:var(--text-xs);color:var(--primary-light);text-decoration:underline">Get Key (Free) ↗</a>
+              </label>
+              <div style="display:flex;gap:var(--sp-2)">
+                <input class="form-input" id="ai-key-input" type="password" value="${config.apiKey || ''}" placeholder="AIzaSy..." style="font-family:monospace;letter-spacing:0.05em">
+                <button class="btn btn-ghost" type="button" onclick="toggleAiVisibility()" id="btn-toggle-key-visibility" title="Show/Hide Key" style="padding:0 12px">👁️</button>
+              </div>
+              <span style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px">Your key is stored securely in your browser's local storage.</span>
+            </div>
+
+            <!-- Model Selection -->
+            <div class="form-group">
+              <label class="form-label" for="ai-model-select">Model Version</label>
+              <select class="form-select" id="ai-model-select">
+                <option value="gemini-2.5-flash" ${config.model === 'gemini-2.5-flash' || !config.model || config.model === 'gemini-3.5-flash' ? 'selected' : ''}>gemini-2.5-flash (Recommended · Fast &amp; Accurate)</option>
+                <option value="gemini-2.0-flash" ${config.model === 'gemini-2.0-flash' ? 'selected' : ''}>gemini-2.0-flash (Ultra-fast latency)</option>
+                <option value="gemini-1.5-flash" ${config.model === 'gemini-1.5-flash' ? 'selected' : ''}>gemini-1.5-flash (Stable)</option>
+                <option value="gemini-1.5-pro" ${config.model === 'gemini-1.5-pro' ? 'selected' : ''}>gemini-1.5-pro (High intelligence)</option>
+              </select>
+            </div>
+
+            <!-- Enable / Disable Switch -->
+            <div class="form-group">
+              <label style="display:flex;align-items:center;gap:var(--sp-3);cursor:pointer;user-select:none">
+                <input type="checkbox" id="ai-enable-switch" ${config.enabled ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--primary)">
+                <div>
+                  <div style="font-weight:600;font-size:var(--text-sm);color:var(--text)">Enable Gemini AI Engine</div>
+                  <div style="font-size:var(--text-xs);color:var(--text-muted)">When unchecked, Tabld uses the built-in rule parser fallback</div>
+                </div>
+              </label>
+            </div>
+
+            <!-- Test Connection Results Container -->
+            <div id="ai-test-result" style="display:none;padding:var(--sp-3);border-radius:var(--r-md);font-size:var(--text-xs)"></div>
+
+            <!-- Action buttons -->
+            <div style="display:flex;gap:var(--sp-2);flex-wrap:wrap;margin-top:var(--sp-2)">
+              <button class="btn btn-primary" onclick="saveApiKey()" id="btn-save-ai">Save Settings</button>
+              <button class="btn btn-ghost" onclick="testAiConnection()" id="btn-test-ai">⚡ Test Connection</button>
+              <button class="btn btn-danger btn-sm" onclick="clearAiKey()" style="margin-left:auto">Clear Key</button>
+            </div>
           </div>
-          <button class="btn btn-primary" onclick="saveApiKey()">Save API Key</button>
+
+          <!-- Feature status & explanation card -->
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-xl);padding:var(--sp-6);display:flex;flex-direction:column;gap:var(--sp-4)">
+            <div style="display:flex;align-items:center;gap:var(--sp-3);padding-bottom:var(--sp-3);border-bottom:1px solid var(--border)">
+              <div style="width:36px;height:36px;border-radius:var(--r-md);background:rgba(59,130,246,0.12);color:var(--info);display:flex;align-items:center;justify-content:center;font-size:18px">✨</div>
+              <div>
+                <h3 style="font-family:var(--font-display);font-size:var(--text-xl);color:var(--text);margin:0">AI-Powered Capabilities</h3>
+                <p style="font-size:var(--text-xs);color:var(--text-muted);margin:0">Integrated throughout the guest experience</p>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:var(--sp-3);font-size:var(--text-sm)">
+              <div style="display:flex;gap:var(--sp-3);align-items:flex-start">
+                <span style="color:var(--primary);font-size:16px;line-height:1">🔍</span>
+                <div>
+                  <strong style="color:var(--text)">Natural Language Search</strong>
+                  <div style="font-size:var(--text-xs);color:var(--text-secondary);margin-top:2px">Parses natural dining queries into cuisine, budget, ambience, and occasion filters.</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:var(--sp-3);align-items:flex-start">
+                <span style="color:var(--primary);font-size:16px;line-height:1">🎯</span>
+                <div>
+                  <strong style="color:var(--text)">Personalized Match Reasons</strong>
+                  <div style="font-size:var(--text-xs);color:var(--text-secondary);margin-top:2px">Dynamically explains to diners why a curated venue fits their exact taste profile.</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:var(--sp-3);align-items:flex-start">
+                <span style="color:var(--primary);font-size:16px;line-height:1">🧩</span>
+                <div>
+                  <strong style="color:var(--text)">Adaptive Taste Onboarding</strong>
+                  <div style="font-size:var(--text-xs);color:var(--text-secondary);margin-top:2px">Generates contextual follow-up questions during new diner profile onboarding.</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:var(--sp-3);align-items:flex-start">
+                <span style="color:var(--success);font-size:16px;line-height:1">🛡️</span>
+                <div>
+                  <strong style="color:var(--text)">Graceful Rule Fallback</strong>
+                  <div style="font-size:var(--text-xs);color:var(--text-secondary);margin-top:2px">When AI is offline or without a key, the built-in offline keyword engine handles all queries.</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <!-- Live Interactive Intent Parser Playground -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-xl);padding:var(--sp-6)">
+          <div style="display:flex;align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-4)">
+            <div style="width:36px;height:36px;border-radius:var(--r-md);background:rgba(34,197,94,0.12);color:var(--success);display:flex;align-items:center;justify-content:center;font-size:18px">🧪</div>
+            <div>
+              <h3 style="font-family:var(--font-display);font-size:var(--text-xl);color:var(--text);margin:0">Intent Parser Playground</h3>
+              <p style="font-size:var(--text-xs);color:var(--text-muted);margin:0">Test natural language queries against the active engine</p>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:var(--sp-3);flex-wrap:wrap;margin-bottom:var(--sp-4)">
+            <input class="form-input" id="ai-playground-input" type="text" placeholder="e.g. Romantic Italian rooftop dinner under ₹2000 in Chennai" value="Romantic rooftop dinner with Italian pasta and quiet ambience" style="flex:1;min-width:260px">
+            <button class="btn btn-primary" onclick="testAiIntent()" id="btn-run-intent">Test Parser</button>
+          </div>
+
+          <div id="ai-playground-output" style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:var(--sp-4);display:none">
+            <div style="font-size:var(--text-xs);font-weight:600;color:var(--text-muted);margin-bottom:var(--sp-2);text-transform:uppercase;letter-spacing:0.05em">Parsed Intent Output</div>
+            <pre id="ai-playground-json" style="margin:0;font-size:var(--text-xs);color:var(--text);overflow-x:auto;white-space:pre-wrap;font-family:monospace"></pre>
+          </div>
+        </div>
+
       </div>
     `;
   }
@@ -476,11 +620,131 @@ Pages.Admin = (function () {
       Components.toast('Role Updated', `User role set to ${newRole}.`, 'success');
     };
 
+    window.toggleAiVisibility = function() {
+      const input = document.getElementById('ai-key-input');
+      const btn = document.getElementById('btn-toggle-key-visibility');
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        if (btn) btn.textContent = '🔒';
+      } else {
+        input.type = 'password';
+        if (btn) btn.textContent = '👁️';
+      }
+    };
+
     window.saveApiKey = function() {
-      const key = document.getElementById('ai-key-input')?.value?.trim();
+      const key = document.getElementById('ai-key-input')?.value?.trim() || '';
+      const model = document.getElementById('ai-model-select')?.value || 'gemini-2.5-flash';
+      const enabled = Boolean(document.getElementById('ai-enable-switch')?.checked);
+
       if (window.AI) {
-        AI.setApiKey(key);
-        Components.toast('API Key Saved', 'Gemini AI engine configured.', 'success');
+        AI.saveConfig({ apiKey: key, model, enabled: key.length > 5 ? enabled : false });
+      }
+
+      const isAct = window.AI && AI.isEnabled();
+      const badge = document.getElementById('sb-ai-badge');
+      if (badge) {
+        badge.className = `badge ${isAct ? 'badge-approved' : 'badge-outline'}`;
+        badge.textContent = isAct ? 'Active' : 'Off';
+      }
+
+      const statusPill = document.getElementById('ai-engine-status-pill');
+      if (statusPill) {
+        statusPill.className = `badge ${isAct ? 'badge-approved' : 'badge-outline'}`;
+        statusPill.innerHTML = `
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${isAct ? '#22c55e' : '#94a3b8'}"></span>
+          ${isAct ? 'AI Engine Active' : 'AI Engine Inactive / Fallback Active'}
+        `;
+      }
+
+      Components.toast('AI Settings Saved', isAct ? 'Gemini AI engine is active!' : 'Settings saved. Fallback rule parser is active.', isAct ? 'success' : 'info');
+    };
+
+    window.clearAiKey = function() {
+      if (confirm('Are you sure you want to clear the Gemini API key?')) {
+        if (window.AI) {
+          AI.saveConfig({ apiKey: '', model: 'gemini-2.5-flash', enabled: false });
+        }
+        renderAiSettings();
+        const badge = document.getElementById('sb-ai-badge');
+        if (badge) {
+          badge.className = 'badge badge-outline';
+          badge.textContent = 'Off';
+        }
+        Components.toast('API Key Cleared', 'Gemini AI has been reset.', 'info');
+      }
+    };
+
+    window.testAiConnection = async function() {
+      const key = document.getElementById('ai-key-input')?.value?.trim() || (window.AI ? AI.getApiKey() : '');
+      const model = document.getElementById('ai-model-select')?.value || 'gemini-2.5-flash';
+      const resultBox = document.getElementById('ai-test-result');
+      const btn = document.getElementById('btn-test-ai');
+
+      if (!key) {
+        if (resultBox) {
+          resultBox.style.display = 'block';
+          resultBox.style.background = 'rgba(239, 68, 68, 0.1)';
+          resultBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+          resultBox.style.color = 'var(--danger)';
+          resultBox.textContent = '⚠️ Please enter an API key first.';
+        }
+        return;
+      }
+
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Testing...'; }
+      if (resultBox) {
+        resultBox.style.display = 'block';
+        resultBox.style.background = 'rgba(59, 130, 246, 0.1)';
+        resultBox.style.border = '1px solid rgba(59, 130, 246, 0.3)';
+        resultBox.style.color = 'var(--info)';
+        resultBox.textContent = `Connecting to Google Gemini (${model})...`;
+      }
+
+      try {
+        const startTime = Date.now();
+        await AI.testConnection(key, model);
+        const latency = Date.now() - startTime;
+        if (resultBox) {
+          resultBox.style.background = 'rgba(34, 197, 94, 0.1)';
+          resultBox.style.border = '1px solid rgba(34, 197, 94, 0.3)';
+          resultBox.style.color = 'var(--success)';
+          resultBox.innerHTML = `✅ <strong>Connected successfully!</strong> (${model} · ${latency}ms latency)`;
+        }
+        Components.toast('Connection Successful', `Connected to Gemini in ${latency}ms.`, 'success');
+      } catch(err) {
+        if (resultBox) {
+          resultBox.style.background = 'rgba(239, 68, 68, 0.1)';
+          resultBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+          resultBox.style.color = 'var(--danger)';
+          resultBox.innerHTML = `❌ <strong>Connection Failed:</strong> ${err.message || err}`;
+        }
+        Components.toast('Connection Failed', err.message || 'Could not verify API key.', 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '⚡ Test Connection'; }
+      }
+    };
+
+    window.testAiIntent = async function() {
+      const prompt = document.getElementById('ai-playground-input')?.value?.trim();
+      const output = document.getElementById('ai-playground-output');
+      const jsonPre = document.getElementById('ai-playground-json');
+      const btn = document.getElementById('btn-run-intent');
+
+      if (!prompt) return;
+
+      if (btn) { btn.disabled = true; btn.textContent = 'Parsing...'; }
+      if (output) output.style.display = 'block';
+      if (jsonPre) jsonPre.textContent = 'Parsing natural language dining request...';
+
+      try {
+        const parsed = await AI.parseNaturalLanguageIntent(prompt);
+        if (jsonPre) jsonPre.textContent = JSON.stringify(parsed, null, 2);
+      } catch(err) {
+        if (jsonPre) jsonPre.textContent = `Error: ${err.message}`;
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Test Parser'; }
       }
     };
 
