@@ -401,6 +401,7 @@ Pages.Admin = (function () {
         </div>
       </div>
     `;
+    _bindAdminActions();
   }
 
   async function renderReservations() {
@@ -636,7 +637,7 @@ Pages.Admin = (function () {
         await DB.clearRestaurantOwner(userId);
       }
       Components.toast('Role Updated', `User role set to ${newRole}.`, 'success');
-      renderUsers();
+      if (window.adminSection) adminSection('users');
     };
 
     window._openOwnerRestaurantPicker = async function(userId) {
@@ -702,7 +703,7 @@ Pages.Admin = (function () {
           // 2. Update restaurants.owner_id
           await DB.setRestaurantOwner(restaurantId, uid);
           Components.toast('Owner Assigned! 🏪', `User is now the owner of "${restaurantName}". They'll see the Owner module on next login.`, 'success', 6000);
-          renderUsers();
+          if (window.adminSection) adminSection('users');
         } catch(err) {
           Components.toast('Error', err.message || 'Failed to assign owner.', 'error');
         }
