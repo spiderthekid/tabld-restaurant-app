@@ -93,6 +93,27 @@ window.Auth = (function () {
         };
       }
 
+      // Check if user owns any restaurant in the restaurants table
+      try {
+        if (finalProfile && finalProfile.role !== 'admin') {
+          const { data: ownedRes, error: ownedErr } = await supa
+            .from('restaurants')
+            .select('id, name')
+            .eq('owner_id', authUser.id)
+            .limit(1)
+            .maybeSingle();
+
+          if (!ownedErr && ownedRes) {
+            finalProfile.role = 'owner';
+            finalProfile.restaurantId = ownedRes.id;
+            finalProfile.restaurantName = ownedRes.name;
+          } else if (finalProfile.role === 'owner' && !finalProfile.restaurantId) {
+            // Revert if owner was unlinked
+            finalProfile.role = 'user';
+          }
+        }
+      } catch (e) {}
+
       // Check if this user had a deferred restaurant listing application from registration
       try {
         const pendingKey = 'tabld_pending_owner_app_' + userEmail;
