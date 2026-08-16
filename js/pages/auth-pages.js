@@ -155,6 +155,24 @@ Pages.Auth = (function () {
               <div style="font-weight:700;color:var(--primary-light);margin-bottom:var(--sp-4);font-size:var(--text-sm);display:flex;align-items:center;gap:var(--sp-2)">
                 <span>🏪</span> Restaurant Listing Details
               </div>
+
+              <!-- Restaurant Profile Photo -->
+              <div class="form-group" style="margin-bottom:var(--sp-4)">
+                <label class="form-label" style="margin-bottom:var(--sp-2)">Restaurant Cover Photo</label>
+                <div id="res-photo-drop" onclick="document.getElementById('reg-res-photo').click()"
+                  style="border:2px dashed var(--border);border-radius:var(--r-lg);overflow:hidden;cursor:pointer;transition:border-color 0.2s,background 0.2s;min-height:140px;display:flex;align-items:center;justify-content:center;position:relative;background:var(--bg-surface)">
+                  <img id="res-photo-preview" src="" alt="" style="display:none;width:100%;height:160px;object-fit:cover">
+                  <div id="res-photo-placeholder" style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);padding:var(--sp-6);color:var(--text-muted)">
+                    <span style="font-size:2rem">📷</span>
+                    <span style="font-size:var(--text-xs);font-weight:600;text-transform:uppercase;letter-spacing:0.08em">Upload a cover photo</span>
+                    <span style="font-size:var(--text-xs)">Click to browse · JPG, PNG, WEBP up to 5 MB</span>
+                  </div>
+                  <button type="button" id="res-photo-remove" onclick="event.stopPropagation();clearResPhoto()"
+                    style="display:none;position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.55);border:none;color:#fff;border-radius:var(--r-full);width:28px;height:28px;cursor:pointer;font-size:1rem;line-height:1;display:none;align-items:center;justify-content:center">✕</button>
+                </div>
+                <input type="file" id="reg-res-photo" accept="image/*" style="display:none" onchange="handleResPhotoSelect(this)">
+              </div>
+
               <div class="form-group" style="margin-bottom:var(--sp-3)">
                 <label class="form-label" for="reg-res-name">Restaurant Name *</label>
                 <input class="form-input" id="reg-res-name" type="text" placeholder="e.g. Saffron & Spice">
@@ -225,6 +243,65 @@ Pages.Auth = (function () {
       });
     });
 
+    // ── Restaurant photo helpers ────────────────────────────────
+    window._resPhotoBlobUrl  = null; // object URL for previewing
+    window._resPhotoDataUrl  = null; // base64 data URL to pass to DB
+
+    window.handleResPhotoSelect = function(input) {
+      const file = input.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        Components.toast('File too large', 'Please choose an image under 5 MB.', 'error');
+        input.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        window._resPhotoDataUrl = ev.target.result;
+        const preview     = document.getElementById('res-photo-preview');
+        const placeholder = document.getElementById('res-photo-placeholder');
+        const removeBtn   = document.getElementById('res-photo-remove');
+        const drop        = document.getElementById('res-photo-drop');
+        if (preview)     { preview.src = ev.target.result; preview.style.display = 'block'; }
+        if (placeholder) { placeholder.style.display = 'none'; }
+        if (removeBtn)   { removeBtn.style.display = 'flex'; }
+        if (drop)        { drop.style.borderStyle = 'solid'; drop.style.borderColor = 'var(--primary)'; }
+      };
+      reader.readAsDataURL(file);
+    };
+
+    window.clearResPhoto = function() {
+      window._resPhotoDataUrl = null;
+      const input       = document.getElementById('reg-res-photo');
+      const preview     = document.getElementById('res-photo-preview');
+      const placeholder = document.getElementById('res-photo-placeholder');
+      const removeBtn   = document.getElementById('res-photo-remove');
+      const drop        = document.getElementById('res-photo-drop');
+      if (input)       { input.value = ''; }
+      if (preview)     { preview.src = ''; preview.style.display = 'none'; }
+      if (placeholder) { placeholder.style.display = 'flex'; }
+      if (removeBtn)   { removeBtn.style.display = 'none'; }
+      if (drop)        { drop.style.borderStyle = 'dashed'; drop.style.borderColor = 'var(--border)'; }
+    };
+
+    // Drag-and-drop support
+    setTimeout(() => {
+      const drop = document.getElementById('res-photo-drop');
+      if (!drop) return;
+      drop.addEventListener('dragover', e => { e.preventDefault(); drop.style.borderColor = 'var(--primary)'; });
+      drop.addEventListener('dragleave', ()  => { drop.style.borderColor = window._resPhotoDataUrl ? 'var(--primary)' : 'var(--border)'; });
+      drop.addEventListener('drop', e => {
+        e.preventDefault();
+        const file = e.dataTransfer.files[0];
+        if (!file || !file.type.startsWith('image/')) return;
+        const input = document.getElementById('reg-res-photo');
+        const dt    = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        handleResPhotoSelect(input);
+      });
+    }, 50);
+
     window.handleRegister = async function(e) {
       e.preventDefault();
       const name     = document.getElementById('reg-name').value.trim();
@@ -261,7 +338,8 @@ Pages.Auth = (function () {
           phone: resPhone,
           email: resEmail,
           priceRange: '₹₹',
-          shortDescription: resDesc || `A curated ${resCuisine} restaurant in Chennai.`
+          shortDescription: resDesc || `A curated ${resCuisine} restaurant in Chennai.`,
+          coverImage: window._resPhotoDataUrl || null
         };
       }
 
@@ -281,30 +359,31 @@ Pages.Auth = (function () {
 
         // Check if email verification is needed
         if (result.needsEmailVerification) {
+          const isOwner = (role === 'owner');
           document.getElementById('register-card').innerHTML = `
             <div style="text-align:center;padding:var(--sp-6) var(--sp-2)">
-              <div style="font-size:3.5rem;margin-bottom:var(--sp-4)">✉️</div>
-              <h2 style="font-family:var(--font-display);font-size:var(--text-2xl);color:var(--text);margin-bottom:var(--sp-3)">Verify Your Email</h2>
-              <p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;margin-bottom:var(--sp-6)">
+              <div style="font-size:3.5rem;margin-bottom:var(--sp-4)">${isOwner ? '⏳' : '✉️'}</div>
+              <h2 style="font-family:var(--font-display);font-size:var(--text-2xl);color:var(--text);margin-bottom:var(--sp-3)">
+                ${isOwner ? 'Application Submitted' : 'Verify Your Email'}
+              </h2>
+              <p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;margin-bottom:var(--sp-2)">
                 We've sent a verification email to <strong>${email}</strong>.<br>
-                Please check your inbox and click the confirmation link to activate your Tabld account.
+                Please check your inbox and click the confirmation link to activate your account.
               </p>
+              ${isOwner ? `<p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;margin-bottom:var(--sp-6);padding:var(--sp-4);background:var(--bg-elevated);border-radius:var(--r-lg);border:1px solid var(--border)">
+                🏪 Once verified, your restaurant listing will be reviewed by our team. You'll be notified when it's approved and live on Tabld.
+              </p>` : ''}
               <button class="btn btn-primary btn-lg btn-w-full" onclick="navigate('/login')">Go to Sign In</button>
             </div>
           `;
           return;
         }
 
-        // If email confirmation is disabled or immediate session
+        // Immediate session — show owner awaiting approval screen or user onboarding
         if (role === 'owner' && resData) {
           await DB.submitListingApplication(resData, result.user.id);
-          Components.toast(
-            'Application Sent to Admin! ⏳',
-            `Welcome ${name.split(' ')[0]}! Your listing application for "${resData.name}" has been sent to our admin team for review & approval.`,
-            'success',
-            7000
-          );
-          navigate('/owner');
+          // Show awaiting approval screen in-place (no navigation to user module)
+          _showOwnerAwaitingApproval(resData.name, name);
         } else {
           Components.toast('Welcome to Tabld!', `Your account is ready, ${name.split(' ')[0]}.`, 'success');
           navigate('/onboarding');
@@ -316,6 +395,63 @@ Pages.Auth = (function () {
         errEl.style.display = 'flex';
       }
     };
+
+    function _showOwnerAwaitingApproval(restaurantName, ownerName) {
+      document.getElementById('app').innerHTML = `
+        <main class="auth-page" id="awaiting-page">
+          <div class="auth-bg-glow auth-bg-glow-1" aria-hidden="true"></div>
+          <div class="auth-bg-glow auth-bg-glow-2" aria-hidden="true"></div>
+          <div class="auth-card animate-scale-in" style="max-width:500px;text-align:center">
+            <div class="auth-logo" style="margin-bottom:var(--sp-6)">Tabld</div>
+
+            <div style="width:80px;height:80px;margin:0 auto var(--sp-6);background:var(--primary-10);border-radius:var(--r-full);display:flex;align-items:center;justify-content:center;font-size:2.5rem;border:2px solid var(--primary)">
+              ⏳
+            </div>
+
+            <h1 style="font-family:var(--font-display);font-size:var(--text-2xl);color:var(--text);margin-bottom:var(--sp-3)">
+              Your Restaurant is Awaiting Approval
+            </h1>
+            <p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.7;margin-bottom:var(--sp-4)">
+              Thanks, <strong>${ownerName.split(' ')[0]}</strong>! We've received your listing application for
+              <strong>${restaurantName}</strong> and it's now under review by our admin team.
+            </p>
+
+            <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--r-xl);padding:var(--sp-5);margin-bottom:var(--sp-6);text-align:left">
+              <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+                <div style="display:flex;align-items:flex-start;gap:var(--sp-3)">
+                  <div style="width:28px;height:28px;min-width:28px;background:var(--primary-10);border-radius:var(--r-full);display:flex;align-items:center;justify-content:center;font-size:0.85rem;margin-top:1px">✔</div>
+                  <div>
+                    <div style="font-weight:600;font-size:var(--text-sm);color:var(--text)">Application submitted</div>
+                    <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:2px">Your restaurant details have been sent to our team</div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:var(--sp-3)">
+                  <div style="width:28px;height:28px;min-width:28px;background:var(--bg-surface);border-radius:var(--r-full);display:flex;align-items:center;justify-content:center;font-size:0.85rem;margin-top:1px;color:var(--text-muted)">🔍</div>
+                  <div>
+                    <div style="font-weight:600;font-size:var(--text-sm);color:var(--text-secondary)">Under review</div>
+                    <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:2px">Usually takes 1–2 business days</div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:var(--sp-3)">
+                  <div style="width:28px;height:28px;min-width:28px;background:var(--bg-surface);border-radius:var(--r-full);display:flex;align-items:center;justify-content:center;font-size:0.85rem;margin-top:1px;color:var(--text-muted)">🚀</div>
+                  <div>
+                    <div style="font-weight:600;font-size:var(--text-sm);color:var(--text-secondary)">Go live</div>
+                    <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:2px">Your listing will appear on Tabld once approved</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:var(--sp-5)">
+              Please check back later. You can sign in any time — your dashboard will unlock once your restaurant is approved.
+            </p>
+
+            <button class="btn btn-primary btn-lg btn-w-full" onclick="navigate('/login')" style="margin-bottom:var(--sp-3)">Back to Sign In</button>
+            <button class="btn btn-ghost btn-w-full" onclick="navigate('/home')">Explore Tabld as a Guest</button>
+          </div>
+        </main>
+      `;
+    }
   }
 
   function renderForgot() {

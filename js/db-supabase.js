@@ -683,6 +683,35 @@ window.DB = (function () {
     async submitListingApplication(appData, userId) {
       if (!window.supa) return null;
       const user = await this.getUserById(userId);
+
+      // Upload cover photo to storage if a data URL was provided
+      let coverImageUrl = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&q=70';
+      if (appData.coverImage && appData.coverImage.startsWith('data:')) {
+        try {
+          const [meta, b64] = appData.coverImage.split(',');
+          const mime   = meta.match(/:(.*?);/)[1];
+          const binary = atob(b64);
+          const bytes  = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          const blob = new Blob([bytes], { type: mime });
+          const ext  = mime.split('/')[1] || 'jpg';
+          const path = `applications/${userId}-${Date.now()}.${ext}`;
+          const { error: upErr } = await supa.storage
+            .from('restaurant-images')
+            .upload(path, blob, { contentType: mime, upsert: true });
+          if (!upErr) {
+            const { data: pubData } = supa.storage.from('restaurant-images').getPublicUrl(path);
+            if (pubData?.publicUrl) coverImageUrl = pubData.publicUrl;
+          } else {
+            console.warn('[DB] Cover image upload failed, using default:', upErr.message);
+          }
+        } catch (imgErr) {
+          console.warn('[DB] Cover image processing error:', imgErr);
+        }
+      } else if (appData.coverImage) {
+        coverImageUrl = appData.coverImage;
+      }
+
       const row = {
         user_id:           userId,
         user_name:         user?.name || '',
@@ -695,7 +724,7 @@ window.DB = (function () {
         email:             appData.email,
         price_range:       appData.priceRange || '₹₹',
         short_description: appData.shortDescription || '',
-        cover_image:       appData.coverImage || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&q=70',
+        cover_image:       coverImageUrl,
         status:            'pending'
       };
       try {
