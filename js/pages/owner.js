@@ -12,6 +12,7 @@ Pages.Owner = (function () {
     if (!Auth.requireRole('owner')) return;
     const user = Auth.getCurrentUser();
     _restaurant = await DB.getOwnerRestaurant(user.id);
+    const reservations = _restaurant ? await DB.getRestaurantReservations(_restaurant.id) : [];
     const pendingCount = reservations.filter(r => r.status === 'pending').length;
 
     document.getElementById('app').innerHTML = `
