@@ -700,7 +700,7 @@
 }
 
 @media (max-width: 1200px) { .admin-stats-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px)  { .admin-stats-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px)  { .admin-stats-grid { grid-template-columns: 1fr; } }
 
 /* ─── OWNER PORTAL ───────────────────────────────────────────── */
 .owner-form-grid {
@@ -762,10 +762,60 @@
   background: linear-gradient(180deg, var(--bg) 0%, rgba(212,168,50,0.03) 50%, var(--bg) 100%);
 }
 
-/* ─── RESPONSIVE TWEAKS ──────────────────────────────────────── */
+/* ─── 100% RESPONSIVE MOBILE & TABLET STYLES ─────────────────── */
+@media (max-width: 900px) {
+  .nav-inner { padding: 0 var(--sp-4); }
+  .restaurant-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--sp-4); }
+  .discover-layout { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 768px) {
-  .hero-search { flex-direction: column; padding: var(--sp-4); gap: var(--sp-3); }
+  .hero-search { flex-direction: column; padding: var(--sp-4); gap: var(--sp-3); width: 100%; }
   .hero-search input { font-size: var(--text-base); }
-  .hero-title { font-size: var(--text-4xl); }
+  .hero-title { font-size: clamp(var(--text-3xl), 8vw, var(--text-5xl)); }
   .featured-card { flex: 0 0 280px; height: 380px; }
+  .section-header { flex-direction: column; align-items: flex-start; gap: var(--sp-2); }
+  .section-see-all { padding: 0; }
+  
+  /* Tables */
+  .data-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -var(--sp-2);
+    border-radius: var(--r-md);
+  }
+  .data-table { min-width: 580px; font-size: var(--text-xs); }
+  .data-table th, .data-table td { padding: var(--sp-2) var(--sp-3); }
+
+  /* Modals */
+  .modal-overlay, #owner-picker-modal, #role-editor-modal, #admin-add-restaurant-modal, #auth-signout-modal {
+    padding: var(--sp-2) !important;
+  }
+  .modal, .modal-lg, .modal-xl {
+    max-width: 100% !important;
+    max-height: 92vh !important;
+    margin: var(--sp-2);
+  }
+  .modal-body { padding: var(--sp-4); }
+  .modal-header { padding: var(--sp-4) var(--sp-4) 0; }
+  .modal-footer { padding: 0 var(--sp-4) var(--sp-4); }
+
+  /* Form grids on mobile */
+  [style*="grid-template-columns: 1fr 1fr"],
+  [style*="grid-template-columns:1fr 1fr"],
+  [style*="grid-template-columns: repeat(2, 1fr)"],
+  [style*="grid-template-columns:repeat(2,1fr)"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-card { padding: var(--sp-6) var(--sp-4); border-radius: var(--r-xl); }
+  .auth-logo { font-size: var(--text-3xl); }
+  .auth-heading { font-size: var(--text-2xl); }
+  .role-selector { grid-template-columns: 1fr; }
+  .btn { padding: 0.65rem 1rem; font-size: var(--text-xs); }
+  .btn-lg { padding: 0.8rem 1.4rem; font-size: var(--text-sm); }
+  .h-scroll-strip { gap: var(--sp-3); }
+  .toast-container { bottom: var(--sp-2); right: var(--sp-2); left: var(--sp-2); }
 }

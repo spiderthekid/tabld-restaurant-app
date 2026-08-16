@@ -13,16 +13,40 @@ Pages.Admin = (function () {
     const stats = await DB.getStats();
 
     document.getElementById('app').innerHTML = `
+      <!-- Mobile Subheader / Section Bar -->
+      <div class="dashboard-mobile-bar" aria-label="Admin mobile section selector">
+        <button class="btn btn-outline btn-sm" onclick="Components.toggleSidebar()" style="display:flex;align-items:center;gap:6px;padding:6px 12px;flex-shrink:0" aria-label="Toggle admin navigation menu">
+          <span style="font-size:1.1rem;line-height:1">☰</span>
+          <span>Menu</span>
+        </button>
+        <div class="dashboard-mobile-chips">
+          <button class="dashboard-chip active" id="chip-overview" onclick="adminSection('overview')">📊 Overview</button>
+          <button class="dashboard-chip" id="chip-approvals" onclick="adminSection('approvals')">
+            ⏳ Approvals <span class="badge badge-pending" id="admin-pending-chip-badge" style="font-size:9px;padding:1px 5px;${stats.pendingApprovals > 0 ? '' : 'display:none'}">${stats.pendingApprovals}</span>
+          </button>
+          <button class="dashboard-chip" id="chip-restaurants" onclick="adminSection('restaurants')">🏪 Restaurants</button>
+          <button class="dashboard-chip" id="chip-users" onclick="adminSection('users')">👥 Users</button>
+          <button class="dashboard-chip" id="chip-reservations" onclick="adminSection('reservations')">📅 Reservations</button>
+          <button class="dashboard-chip" id="chip-ai" onclick="adminSection('ai')">🔑 AI Settings</button>
+        </div>
+      </div>
+
+      <!-- Backdrop for mobile drawer -->
+      <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()" aria-hidden="true"></div>
+
       <div class="dashboard-layout">
 
         <!-- Sidebar -->
         <aside class="sidebar" aria-label="Admin navigation">
-          <div style="margin-bottom:var(--sp-6)">
-            <div style="display:flex;align-items:center;gap:var(--sp-2);margin-bottom:var(--sp-1)">
-              <span class="badge badge-pending" style="font-size:10px">ADMIN</span>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:var(--sp-6)">
+            <div>
+              <div style="display:flex;align-items:center;gap:var(--sp-2);margin-bottom:var(--sp-1)">
+                <span class="badge badge-pending" style="font-size:10px">ADMIN</span>
+              </div>
+              <div style="font-family:var(--font-display);font-size:var(--text-xl);font-weight:700;color:var(--text)">${user.name}</div>
+              <div style="font-size:var(--text-xs);color:var(--text-muted)">Administrator Module</div>
             </div>
-            <div style="font-family:var(--font-display);font-size:var(--text-xl);font-weight:700;color:var(--text)">${user.name}</div>
-            <div style="font-size:var(--text-xs);color:var(--text-muted)">Administrator Module</div>
+            <button class="btn btn-ghost btn-sm" onclick="closeSidebar()" style="display:none;padding:4px 8px" id="admin-close-sidebar-btn" aria-label="Close menu">✕</button>
           </div>
           <nav class="sidebar-nav" role="navigation" aria-label="Admin sections">
             <button class="sidebar-item active" id="sb-overview" onclick="adminSection('overview')" aria-label="Overview dashboard">
@@ -64,9 +88,20 @@ Pages.Admin = (function () {
 
     window.adminSection = async function(section) {
       _section = section;
+      
+      // Update active sidebar buttons
       document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
       const btn = document.getElementById(`sb-${section}`);
       if (btn) btn.classList.add('active');
+
+      // Update active mobile chips
+      document.querySelectorAll('.dashboard-chip').forEach(c => c.classList.remove('active'));
+      const chip = document.getElementById(`chip-${section}`);
+      if (chip) chip.classList.add('active');
+
+      // Close mobile drawers
+      if (window.closeSidebar) closeSidebar();
+      if (window.closeMobileMenu) closeMobileMenu();
 
       const map = {
         overview: renderOverview,

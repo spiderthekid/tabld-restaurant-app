@@ -12,16 +12,37 @@ Pages.Owner = (function () {
     if (!Auth.requireRole('owner')) return;
     const user = Auth.getCurrentUser();
     _restaurant = await DB.getOwnerRestaurant(user.id);
-    const reservations = _restaurant ? await DB.getRestaurantReservations(_restaurant.id) : [];
+    const pendingCount = reservations.filter(r => r.status === 'pending').length;
 
     document.getElementById('app').innerHTML = `
+      <!-- Mobile Subheader / Section Bar -->
+      <div class="dashboard-mobile-bar" aria-label="Owner mobile section selector">
+        <button class="btn btn-outline btn-sm" onclick="Components.toggleSidebar()" style="display:flex;align-items:center;gap:6px;padding:6px 12px;flex-shrink:0" aria-label="Toggle owner navigation menu">
+          <span style="font-size:1.1rem;line-height:1">☰</span>
+          <span>Menu</span>
+        </button>
+        <div class="dashboard-mobile-chips">
+          <button class="dashboard-chip active" id="chip-profile" onclick="ownerSection('profile')">🏪 My Restaurant</button>
+          <button class="dashboard-chip" id="chip-slots" onclick="ownerSection('slots')">⏰ Availability Slots</button>
+          <button class="dashboard-chip" id="chip-reservations" onclick="ownerSection('reservations')">
+            📅 Reservations <span class="badge badge-pending" id="owner-pending-chip-badge" style="font-size:9px;padding:1px 5px;${pendingCount === 0 ? 'display:none' : ''}">${pendingCount}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Backdrop for mobile drawer -->
+      <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()" aria-hidden="true"></div>
+
       <div class="dashboard-layout">
 
         <!-- Sidebar -->
         <aside class="sidebar" aria-label="Owner portal navigation">
-          <div style="margin-bottom:var(--sp-6)">
-            <div style="font-family:var(--font-display);font-size:var(--text-xl);font-weight:700;color:var(--text);margin-bottom:var(--sp-1)">${user.name}</div>
-            <div style="font-size:var(--text-xs);color:var(--text-muted)">Restaurant Owner</div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:var(--sp-6)">
+            <div>
+              <div style="font-family:var(--font-display);font-size:var(--text-xl);font-weight:700;color:var(--text);margin-bottom:var(--sp-1)">${user.name}</div>
+              <div style="font-size:var(--text-xs);color:var(--text-muted)">Restaurant Owner</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="closeSidebar()" style="display:none;padding:4px 8px" id="owner-close-sidebar-btn" aria-label="Close menu">✕</button>
           </div>
           <nav class="sidebar-nav" role="navigation" aria-label="Owner sections">
             <button class="sidebar-item active" id="sb-profile" onclick="ownerSection('profile')" aria-label="Restaurant Profile">
@@ -32,7 +53,7 @@ Pages.Owner = (function () {
             </button>
             <button class="sidebar-item" id="sb-reservations" onclick="ownerSection('reservations')" aria-label="Manage Reservations">
               <span class="sidebar-icon">${Components.icons.calendar}</span> Reservations
-              <span class="badge badge-pending" id="owner-pending-badge" style="margin-left:auto;${reservations.filter(r=>r.status==='pending').length===0?'display:none':''}">${reservations.filter(r=>r.status==='pending').length}</span>
+              <span class="badge badge-pending" id="owner-pending-badge" style="margin-left:auto;${pendingCount === 0 ? 'display:none' : ''}">${pendingCount}</span>
             </button>
             <button class="sidebar-item" onclick="Auth.logout()" aria-label="Sign out">
               <span class="sidebar-icon">${Components.icons.logout}</span> Sign Out
@@ -49,9 +70,20 @@ Pages.Owner = (function () {
 
     window.ownerSection = async function(section) {
       _activeSection = section;
+
+      // Update active sidebar buttons
       document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
       const btn = document.getElementById(`sb-${section}`);
       if (btn) btn.classList.add('active');
+
+      // Update active mobile chips
+      document.querySelectorAll('.dashboard-chip').forEach(c => c.classList.remove('active'));
+      const chip = document.getElementById(`chip-${section}`);
+      if (chip) chip.classList.add('active');
+
+      // Close mobile drawers
+      if (window.closeSidebar) closeSidebar();
+      if (window.closeMobileMenu) closeMobileMenu();
 
       _restaurant = await DB.getOwnerRestaurant(user.id);
       const freshRes = _restaurant ? await DB.getRestaurantReservations(_restaurant.id) : [];

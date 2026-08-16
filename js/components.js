@@ -82,8 +82,13 @@ window.Components = (function () {
         { label: 'My Restaurant',  hash: '#/owner', icon: icons.store },
       ] : [
         { label: 'Home',           hash: '#/home',  icon: icons.home },
+        { label: 'Discover',       hash: '#/discover', icon: icons.compass },
+        { label: 'My Bookings',    hash: '#/profile', icon: icons.calendar },
       ]
-    ) : [];
+    ) : [
+      { label: 'Home',     hash: '#/home',     icon: icons.home },
+      { label: 'Discover', hash: '#/discover', icon: icons.compass },
+    ];
 
     navEl.innerHTML = `
       <div class="nav-inner">
@@ -105,29 +110,66 @@ window.Components = (function () {
             <button class="btn btn-ghost btn-sm" onclick="navigate('/login')" id="nav-login-btn">Login</button>
             <button class="btn btn-primary btn-sm" onclick="navigate('/register')" id="nav-register-btn">Join Tabld</button>
           `}
-          <button class="nav-hamburger" id="hamburger-btn" aria-label="Toggle mobile menu" aria-expanded="false">
+          <button class="nav-hamburger" id="hamburger-btn" aria-label="Toggle navigation menu" aria-expanded="false">
             <span></span><span></span><span></span>
           </button>
         </div>
       </div>
+
+      <!-- Mobile Navigation Drawer / Menu -->
       <div class="mobile-menu" id="mobile-menu" role="navigation" aria-label="Mobile navigation">
-        ${links.map(l => `
-          <button class="nav-link ${currentHash === l.hash ? 'active' : ''}"
-            onclick="navigate('${l.hash.replace('#','')}'); closeMobileMenu()">
-            ${l.label}
-          </button>
-        `).join('')}
+        ${user && user.role === 'admin' ? `
+          <div style="font-size:var(--text-xs);font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:var(--sp-2)">Admin Dashboard</div>
+          <button class="nav-link" onclick="navigate('/admin'); if(window.adminSection) adminSection('overview'); closeMobileMenu();">📊 Overview</button>
+          <button class="nav-link" onclick="navigate('/admin'); if(window.adminSection) adminSection('approvals'); closeMobileMenu();">⏳ Pending Approvals</button>
+          <button class="nav-link" onclick="navigate('/admin'); if(window.adminSection) adminSection('restaurants'); closeMobileMenu();">🏪 Manage Restaurants</button>
+          <button class="nav-link" onclick="navigate('/admin'); if(window.adminSection) adminSection('users'); closeMobileMenu();">👥 Users &amp; Roles</button>
+          <button class="nav-link" onclick="navigate('/admin'); if(window.adminSection) adminSection('reservations'); closeMobileMenu();">📅 All Reservations</button>
+          <button class="nav-link" onclick="navigate('/admin'); if(window.adminSection) adminSection('ai'); closeMobileMenu();">🔑 AI Engine &amp; API Key</button>
+          <div style="height:1px;background:var(--border);margin:var(--sp-2) 0"></div>
+          <button class="nav-link" onclick="navigate('/home'); closeMobileMenu();">🏠 View Public App</button>
+        ` : user && user.role === 'owner' ? `
+          <div style="font-size:var(--text-xs);font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:var(--sp-2)">Owner Portal</div>
+          <button class="nav-link" onclick="navigate('/owner'); if(window.ownerSection) ownerSection('profile'); closeMobileMenu();">🏪 My Restaurant</button>
+          <button class="nav-link" onclick="navigate('/owner'); if(window.ownerSection) ownerSection('slots'); closeMobileMenu();">⏰ Availability Slots</button>
+          <button class="nav-link" onclick="navigate('/owner'); if(window.ownerSection) ownerSection('reservations'); closeMobileMenu();">📅 Reservations</button>
+          <div style="height:1px;background:var(--border);margin:var(--sp-2) 0"></div>
+          <button class="nav-link" onclick="navigate('/home'); closeMobileMenu();">🏠 Explore Tabld</button>
+        ` : `
+          ${links.map(l => `
+            <button class="nav-link ${currentHash === l.hash ? 'active' : ''}"
+              onclick="navigate('${l.hash.replace('#','')}'); closeMobileMenu()">
+              ${l.label}
+            </button>
+          `).join('')}
+          ${!user ? `
+            <div style="height:1px;background:var(--border);margin:var(--sp-2) 0"></div>
+            <button class="nav-link" onclick="Components.openListingApplicationModal(); closeMobileMenu();" style="color:var(--primary-light)">🏪 List Your Restaurant</button>
+            <button class="nav-link" onclick="navigate('/login'); closeMobileMenu();">🔑 Sign In</button>
+            <button class="nav-link" onclick="navigate('/register'); closeMobileMenu();">📝 Create Account</button>
+          ` : `
+            <div style="height:1px;background:var(--border);margin:var(--sp-2) 0"></div>
+            <button class="nav-link" onclick="Components.openListingApplicationModal(); closeMobileMenu();" style="color:var(--primary-light)">🏪 List Your Restaurant</button>
+          `}
+        `}
         ${user ? `<button class="nav-link" onclick="Auth.logout()">${icons.logout} Sign Out</button>` : ''}
       </div>
     `;
 
-    // Hamburger toggle
+    // Hamburger toggle logic
     const hamburger = document.getElementById('hamburger-btn');
     const mobileMenu = document.getElementById('mobile-menu');
     if (hamburger && mobileMenu) {
       hamburger.addEventListener('click', () => {
-        const isOpen = mobileMenu.classList.toggle('open');
-        hamburger.setAttribute('aria-expanded', isOpen);
+        // If on admin or owner dashboard, also toggle sidebar if present
+        const isDashboard = window.location.hash.startsWith('#/admin') || window.location.hash.startsWith('#/owner');
+        const sidebar = document.querySelector('.sidebar');
+        if (isDashboard && sidebar && window.innerWidth <= 900) {
+          Components.toggleSidebar();
+        } else {
+          const isOpen = mobileMenu.classList.toggle('open');
+          hamburger.setAttribute('aria-expanded', isOpen);
+        }
       });
     }
 
@@ -142,7 +184,26 @@ window.Components = (function () {
 
   window.closeMobileMenu = () => {
     const m = document.getElementById('mobile-menu');
+    const h = document.getElementById('hamburger-btn');
     if (m) m.classList.remove('open');
+    if (h) h.setAttribute('aria-expanded', 'false');
+  };
+
+  window.closeSidebar = () => {
+    const s = document.querySelector('.sidebar');
+    const b = document.getElementById('sidebar-backdrop');
+    if (s) s.classList.remove('open');
+    if (b) b.classList.remove('active');
+  };
+
+  function toggleSidebar() {
+    const s = document.querySelector('.sidebar');
+    const b = document.getElementById('sidebar-backdrop');
+    if (!s) return;
+    const willOpen = !s.classList.contains('open');
+    s.classList.toggle('open', willOpen);
+    if (b) b.classList.toggle('active', willOpen);
+  }
   };
 
   // ─── Restaurant Card ──────────────────────────────────────────
@@ -720,7 +781,8 @@ window.Components = (function () {
     priceLabel, noiseBadge, renderHours, renderMenu, renderAccessibility,
     openListingApplicationModal, submitListingForm,
     openCancelReservationModal, submitCancelReservation,
-    openShiftReservationModal, submitShiftReservation
+    openShiftReservationModal, submitShiftReservation,
+    toggleSidebar, closeSidebar: window.closeSidebar
   };
 })();
 
