@@ -53,7 +53,17 @@ window.Components = (function () {
     const navEl = document.getElementById('nav');
     if (!navEl) return;
 
-    const currentHash = window.location.hash;
+    const currentHash = window.location.hash || '';
+    const isAuthPage = currentHash.startsWith('#/login') || currentHash.startsWith('#/register') || currentHash.startsWith('#/forgot-password');
+
+    if (isAuthPage) {
+      navEl.style.display = 'none';
+      navEl.innerHTML = '';
+      return;
+    }
+
+    navEl.style.display = '';
+
     const isOnboarding = currentHash.startsWith('#/onboarding') || (user && user.role === 'user' && !user.onboardingCompleted);
 
     if (isOnboarding) {
