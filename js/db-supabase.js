@@ -326,14 +326,23 @@ window.DB = (function () {
         return _cachedAllRestaurants.find(r => r.ownerId === ownerId) || null;
       }
       try {
+        // 1. Direct check by owner_id on restaurants table
         const { data, error } = await supa
           .from('restaurants')
           .select('*')
           .eq('owner_id', ownerId)
           .limit(1)
           .maybeSingle();
-        if (error || !data) return null;
-        return _mapRestaurant(data);
+        if (!error && data) return _mapRestaurant(data);
+
+        // 2. Fallback: check profile.restaurant_id
+        const user = await this.getUserById(ownerId);
+        if (user && user.restaurantId) {
+          const res = await this.getRestaurantById(user.restaurantId);
+          if (res) return res;
+        }
+
+        return null;
       } catch (e) { return null; }
     },
 
@@ -348,7 +357,10 @@ window.DB = (function () {
           .select()
           .single();
         if (error) { console.error('[DB] setRestaurantOwner error:', error); return null; }
-        return _mapRestaurant(data);
+        const mapped = _mapRestaurant(data);
+        const idx = _cachedAllRestaurants.findIndex(r => r.id === mapped.id);
+        if (idx > -1) _cachedAllRestaurants[idx] = mapped;
+        return mapped;
       } catch (e) { console.error('[DB] setRestaurantOwner catch:', e); return null; }
     },
 
@@ -365,9 +377,11 @@ window.DB = (function () {
 
     // Admin action: update a user's role and link/unlink restaurant
     async adminUpdateUserRole(targetUserId, newRole, restaurantId = null) {
-      if (!window.supa || !targetUserId) return null;
-      
-      // 1. Try Supabase RPC if present
+      if (!window.supa || !targetUserId) {
+        return { ok: false, error: 'Database connection not ready or missing user ID.' };
+      }
+
+      // 1. Try Supabase RPC function (bypasses RLS via security definer)
       try {
         const { data: rpcData, error: rpcErr } = await supa.rpc('admin_update_user_role', {
           target_user_id: targetUserId,
@@ -375,7 +389,10 @@ window.DB = (function () {
           new_restaurant_id: restaurantId ? Number(restaurantId) : null
         });
         if (!rpcErr && rpcData) {
-          return _mapProfile(rpcData);
+          if (newRole === 'owner' && restaurantId) {
+            await this.setRestaurantOwner(restaurantId, targetUserId);
+          }
+          return { ok: true, profile: _mapProfile(rpcData) };
         }
       } catch (e) {}
 
@@ -392,19 +409,24 @@ window.DB = (function () {
           .select()
           .single();
 
+        if (error) {
+          console.error('[DB] adminUpdateUserRole profile update error:', error);
+          return {
+            ok: false,
+            error: error.message || 'Row Level Security policy blocked update. Run the SQL schema update in Supabase SQL editor.'
+          };
+        }
+
         if (newRole === 'owner' && restaurantId) {
           await this.setRestaurantOwner(restaurantId, targetUserId);
         } else if (newRole !== 'owner') {
           await this.clearRestaurantOwner(targetUserId);
         }
 
-        if (error) {
-          console.error('[DB] adminUpdateUserRole profile error:', error);
-        }
-        return data ? _mapProfile(data) : { id: targetUserId, role: newRole, restaurantId };
+        return { ok: true, profile: _mapProfile(data) };
       } catch (err) {
         console.error('[DB] adminUpdateUserRole catch:', err);
-        return null;
+        return { ok: false, error: err.message || 'Failed to update user role.' };
       }
     },
 

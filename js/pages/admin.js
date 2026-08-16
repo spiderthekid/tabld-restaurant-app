@@ -684,10 +684,14 @@ Pages.Admin = (function () {
       document.getElementById('role-editor-modal')?.remove();
       if (newRole === currentRole) return;
       try {
-        await DB.adminUpdateUserRole(userId, newRole, null);
-        Components.toast('Role Updated', `User role set to ${newRole}.`, 'success');
+        const res = await DB.adminUpdateUserRole(userId, newRole, null);
+        if (res && res.ok) {
+          Components.toast('Role Updated', `User role set to ${newRole}.`, 'success');
+        } else {
+          Components.toast('Update Failed', (res && res.error) || 'Could not update role.', 'error', 8000);
+        }
       } catch (err) {
-        Components.toast('Update Failed', err.message || 'Could not update role.', 'error');
+        Components.toast('Update Failed', err.message || 'Could not update role.', 'error', 8000);
       }
       if (window.adminSection) adminSection('users');
     };
@@ -695,10 +699,14 @@ Pages.Admin = (function () {
     window.assignOwnerRole = async function(userId, currentRole, restaurantId, restaurantName, userName) {
       document.getElementById('role-editor-modal')?.remove();
       try {
-        await DB.adminUpdateUserRole(userId, 'owner', restaurantId);
-        Components.toast('Owner Assigned! 🏪', `${userName} is now the owner of "${restaurantName}". They will see the Owner module.`, 'success', 6000);
+        const res = await DB.adminUpdateUserRole(userId, 'owner', restaurantId);
+        if (res && res.ok) {
+          Components.toast('Owner Assigned! 🏪', `${userName} is now the owner of "${restaurantName}". They will see the Owner module.`, 'success', 6000);
+        } else {
+          Components.toast('Assignment Failed', (res && res.error) || 'Failed to assign owner.', 'error', 8000);
+        }
       } catch(err) {
-        Components.toast('Assignment Failed', err.message || 'Failed to assign owner.', 'error');
+        Components.toast('Assignment Failed', err.message || 'Failed to assign owner.', 'error', 8000);
       }
       if (window.adminSection) adminSection('users');
     };
