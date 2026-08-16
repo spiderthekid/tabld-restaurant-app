@@ -31,7 +31,7 @@ window.Router = (function () {
 
   async function _render({ route, param }) {
     const config = ROUTES[route];
-    const user = Auth.getCurrentUser();
+    let user = Auth.getCurrentUser();
 
     // Unknown route → redirect
     if (!config) { navigate('/home'); return; }
@@ -40,6 +40,23 @@ window.Router = (function () {
     if (PUBLIC_ROUTES.includes(route) && user) {
       navigate('/' + _defaultRouteForRole(user.role));
       return;
+    }
+
+    // For 'user' role: silently refresh session from DB to pick up any
+    // role upgrades (e.g. admin approved their restaurant application).
+    // This runs once per navigation so approved owners get auto-promoted.
+    if (user && user.role === 'user') {
+      try {
+        const refreshed = await Auth.refreshSession();
+        if (refreshed && refreshed.role !== 'user') {
+          // Role has changed — update local reference and redirect to new home
+          user = refreshed;
+          if (window.Components && Components.renderNav) Components.renderNav();
+          navigate('/' + _defaultRouteForRole(refreshed.role));
+          return;
+        }
+        if (refreshed) user = refreshed;
+      } catch (e) { /* non-fatal, continue with cached session */ }
     }
 
     // Protected routes — require login
