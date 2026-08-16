@@ -299,9 +299,14 @@ Pages.Admin = (function () {
             <h1>Manage Restaurants</h1>
             <p>Full database catalog of restaurants on Tabld.</p>
           </div>
-          <button class="btn btn-primary" id="admin-add-restaurant-btn" onclick="openAddRestaurantModal()" style="flex-shrink:0">
-            <span style="font-size:1.1em">+</span>&nbsp; Add Restaurant
-          </button>
+          <div style="display:flex;gap:var(--sp-2);flex-wrap:wrap">
+            <button class="btn btn-outline" id="admin-seed-btn" onclick="seedSampleRestaurants()" style="flex-shrink:0" title="Populate curated sample restaurants in Chennai (preserves all existing restaurants)">
+              🌱 Seed Sample Data
+            </button>
+            <button class="btn btn-primary" id="admin-add-restaurant-btn" onclick="openAddRestaurantModal()" style="flex-shrink:0">
+              <span style="font-size:1.1em">+</span>&nbsp; Add Restaurant
+            </button>
+          </div>
         </div>
 
         <div class="data-table-wrap">
@@ -837,6 +842,28 @@ Pages.Admin = (function () {
         if (jsonPre) jsonPre.textContent = `Error: ${err.message}`;
       } finally {
         if (btn) { btn.disabled = false; btn.textContent = 'Test Parser'; }
+      }
+    };
+
+    // ── Seed Sample Restaurants ──────────────────────────────
+    window.seedSampleRestaurants = async function() {
+      const btn = document.getElementById('admin-seed-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Seeding…'; }
+
+      try {
+        const res = await DB.seedDummyRestaurants();
+        if (res && res.count > 0) {
+          Components.toast('Sample Data Added! 🌱', `Added ${res.count} curated restaurants to your catalog. Your existing restaurant is preserved.`, 'success', 6000);
+        } else if (res && res.message) {
+          Components.toast('Already Seeded', res.message, 'info');
+        } else if (res && res.error) {
+          Components.toast('Seeding Error', res.error, 'error');
+        }
+      } catch (e) {
+        Components.toast('Error', e.message || 'Failed to seed sample data.', 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '🌱 Seed Sample Data'; }
+        if (window.adminSection) adminSection('restaurants');
       }
     };
 

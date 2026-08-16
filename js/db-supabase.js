@@ -1116,6 +1116,393 @@ window.DB = (function () {
       }
     },
 
+    // ── DUMMY DATA SEEDING ──────────────────────────────────────
+    async seedDummyRestaurants() {
+      if (!window.supa) return { count: 0, error: 'Supabase connection not ready' };
+
+      const DUMMY_LIST = [
+        {
+          name: "Avartana",
+          slug: "avartana-chennai",
+          cuisine: "Modern South Indian",
+          cuisine_category: "South Indian",
+          price_range: "₹₹₹₹",
+          price_level: 4,
+          editorial_description: "A culinary tour de force reimagining coastal and southern Indian flavours through avant-garde techniques, modernist presentations, and sublime tasting menus.",
+          short_description: "Progressive, Michelin-caliber South Indian degustation menus.",
+          address: "ITC Grand Chola, 63 Anna Salai, Guindy",
+          city: "Chennai",
+          phone: "+91 44 2220 0000",
+          email: "avartana.itcgrandchola@itchotels.in",
+          website: "https://www.itchotels.com/in/en/itcgrandchola-chennai/dining/avartana",
+          cover_image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=1920&q=80",
+          gallery: [
+            "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&q=80",
+            "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80",
+            "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&q=80"
+          ],
+          menu: [
+            {
+              section: "Tasting Menu Highlights",
+              items: [
+                { name: "Distilled Rasam", description: "Infused with fresh coriander and crushed Tellicherry black pepper", price: "₹850" },
+                { name: "Pan-Seared Lobster", description: "Tossed in roasted shallots and tender coconut emulsion", price: "₹1,850" },
+                { name: "Asparagus & Raw Mango", description: "Steamed dumplings with spiced coconut foam", price: "₹950" },
+                { name: "Lamb Chops Ghee Roast", description: "Slow-roasted tender lamb chops with Byadgi chili glaze", price: "₹1,950" }
+              ]
+            }
+          ],
+          best_dishes: ["Distilled Rasam", "Lamb Chops Ghee Roast", "Pan-Seared Lobster"],
+          hours: {
+            monday: { open: "19:00", close: "23:30", closed: false },
+            tuesday: { open: "19:00", close: "23:30", closed: false },
+            wednesday: { open: "19:00", close: "23:30", closed: false },
+            thursday: { open: "19:00", close: "23:30", closed: false },
+            friday: { open: "19:00", close: "23:30", closed: false },
+            saturday: { open: "12:30", close: "23:30", closed: false },
+            sunday: { open: "12:30", close: "23:30", closed: false }
+          },
+          accessibility: { wheelchairAccess: true, brailleMenu: true, hearingLoop: true, largeText: true, note: "Full valet and elevator access from ITC lobby." },
+          noise_level: "Quiet",
+          noise_level_score: 1,
+          vibe_tags: ["Fine Dining", "Romantic", "Modern Indian", "Luxury"],
+          ambience: "Luxury",
+          cuisine_filters: ["South Indian", "Modern Indian", "Fine Dining"],
+          budget_filter: "₹₹₹₹",
+          distance_km: 4.2,
+          featured: true,
+          trending: true,
+          recently_added: false,
+          approved: true,
+          rating: 4.9,
+          review_count: 342,
+          capacity: 45,
+          available_slots: ["19:00","19:30","20:00","20:30","21:00","21:30"]
+        },
+        {
+          name: "Pumpkin Tales",
+          slug: "pumpkin-tales-alwarpet",
+          cuisine: "Global Comfort & Brunch",
+          cuisine_category: "Cafe & Brunch",
+          price_range: "₹₹",
+          price_level: 2,
+          editorial_description: "An all-day cafe celebrated for artisanal sourdough toasts, vibrant grain bowls, Japanese souffle pancakes, and exceptional specialty pour-over coffees.",
+          short_description: "Wholesome global comfort food & artisan bakery.",
+          address: "37, 20 Bheemanna Garden Street, Alwarpet",
+          city: "Chennai",
+          phone: "+91 44 2499 6945",
+          email: "hello@pumpkintales.com",
+          website: "https://www.pumpkintales.com",
+          cover_image: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1920&q=80",
+          gallery: [
+            "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&q=80",
+            "https://images.unsplash.com/photo-1525610553991-2bede1a236e2?w=800&q=80"
+          ],
+          menu: [
+            {
+              section: "All-Day Breakfast & Mains",
+              items: [
+                { name: "Avocado & Poached Egg Toast", description: "Hass avocado, sourdough bread, za'atar, pickled radish", price: "₹480" },
+                { name: "Japanese Souffle Pancakes", description: "Light-as-air stack with maple honeycomb butter", price: "₹420" },
+                { name: "Korean Bibimbap Bowl", description: "Sticky rice, sauteed seasonal greens, gochujang sauce", price: "₹560" },
+                { name: "Truffle Mushroom Risotto", description: "Arborio rice, wild shiitake, parmesan crisp", price: "₹620" }
+              ]
+            }
+          ],
+          best_dishes: ["Avocado & Poached Egg Toast", "Japanese Souffle Pancakes", "Truffle Mushroom Risotto"],
+          hours: {
+            monday: { open: "07:00", close: "22:30", closed: false },
+            tuesday: { open: "07:00", close: "22:30", closed: false },
+            wednesday: { open: "07:00", close: "22:30", closed: false },
+            thursday: { open: "07:00", close: "22:30", closed: false },
+            friday: { open: "07:00", close: "22:30", closed: false },
+            saturday: { open: "07:00", close: "23:00", closed: false },
+            sunday: { open: "07:00", close: "23:00", closed: false }
+          },
+          accessibility: { wheelchairAccess: true, brailleMenu: false, hearingLoop: false, largeText: false, note: "Ramp available at main entrance." },
+          noise_level: "Moderate",
+          noise_level_score: 2,
+          vibe_tags: ["Brunch", "Casual", "Outdoor Seating", "Coffee"],
+          ambience: "Casual",
+          cuisine_filters: ["Cafe & Brunch", "Continental", "Vegetarian-Friendly"],
+          budget_filter: "₹₹",
+          distance_km: 2.1,
+          featured: true,
+          trending: true,
+          recently_added: false,
+          approved: true,
+          rating: 4.8,
+          review_count: 215,
+          capacity: 60,
+          available_slots: ["09:00","10:30","12:00","13:30","18:00","19:30","20:30"]
+        },
+        {
+          name: "Soy Soi",
+          slug: "soy-soi-adyar",
+          cuisine: "Pan-Asian & Dim Sum",
+          cuisine_category: "Asian",
+          price_range: "₹₹₹",
+          price_level: 3,
+          editorial_description: "An homage to the street-food culture of Thailand, Vietnam, Singapore, and Indonesia, serving handcrafted dim sums, aromatic laksa, and sizzling robata grills.",
+          short_description: "Authentic Southeast Asian street flavors & delicate dim sums.",
+          address: "2/10 Gandhi Nagar 1st Main Road, Adyar",
+          city: "Chennai",
+          phone: "+91 44 4553 4343",
+          email: "reservations@soysoi.in",
+          website: "https://www.soysoi.in",
+          cover_image: "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=1920&q=80",
+          gallery: [
+            "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=800&q=80",
+            "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?w=800&q=80"
+          ],
+          menu: [
+            {
+              section: "Dim Sum & Asian Specialties",
+              items: [
+                { name: "Truffle Edamame Dumplings", description: "Steamed crystal dumplings with black truffle oil", price: "₹520" },
+                { name: "Prawn Har Gau", description: "Classic translucent wrappers filled with juicy tiger prawns", price: "₹580" },
+                { name: "Singaporean Seafood Laksa", description: "Spicy coconut broth, rice noodles, calamari, tofu puffs", price: "₹690" },
+                { name: "Nasi Goreng Istimewa", description: "Indonesian wok-fried rice with chicken satay & fried egg", price: "₹640" }
+              ]
+            }
+          ],
+          best_dishes: ["Truffle Edamame Dumplings", "Singaporean Seafood Laksa", "Prawn Har Gau"],
+          hours: {
+            monday: { open: "12:00", close: "23:00", closed: false },
+            tuesday: { open: "12:00", close: "23:00", closed: false },
+            wednesday: { open: "12:00", close: "23:00", closed: false },
+            thursday: { open: "12:00", close: "23:00", closed: false },
+            friday: { open: "12:00", close: "23:30", closed: false },
+            saturday: { open: "12:00", close: "23:30", closed: false },
+            sunday: { open: "12:00", close: "23:00", closed: false }
+          },
+          accessibility: { wheelchairAccess: true, brailleMenu: false, hearingLoop: false, largeText: false, note: "Street-level entrance with elevator." },
+          noise_level: "Lively",
+          noise_level_score: 3,
+          vibe_tags: ["Pan-Asian", "Dim Sum", "Lively", "Cocktails"],
+          ambience: "Lively",
+          cuisine_filters: ["Asian", "Dim Sum", "Thai", "Vietnamese"],
+          budget_filter: "₹₹₹",
+          distance_km: 3.8,
+          featured: false,
+          trending: true,
+          recently_added: false,
+          approved: true,
+          rating: 4.7,
+          review_count: 188,
+          capacity: 70,
+          available_slots: ["12:30","13:30","19:00","20:00","21:00","21:45"]
+        },
+        {
+          name: "The Flying Elephant",
+          slug: "the-flying-elephant-guindy",
+          cuisine: "Global Experiential & Grill",
+          cuisine_category: "Global",
+          price_range: "₹₹₹₹",
+          price_level: 4,
+          editorial_description: "A breathtaking multi-level architectural spectacle offering theatrical open show-kitchens, world-class wood-fired grills, and curated mixology.",
+          short_description: "Multi-level theater of global dining & live kitchens.",
+          address: "Park Hyatt Chennai, 39 Velachery Road, Guindy",
+          city: "Chennai",
+          phone: "+91 44 7177 1234",
+          email: "flyingelephant.parkhyatt@hyatt.com",
+          website: "https://www.hyatt.com/en-US/hotel/india/park-hyatt-chennai/cheph/dining",
+          cover_image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=1920&q=80",
+          gallery: [
+            "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800&q=80",
+            "https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=800&q=80"
+          ],
+          menu: [
+            {
+              section: "Charcoal Grill & Global Signatures",
+              items: [
+                { name: "Wood-Fired Neapolitan Pizza", description: "San Marzano tomatoes, fior di latte, fresh basil", price: "₹950" },
+                { name: "Australian Lamb Rack", description: "Herb-crusted with roasted root vegetables and jus", price: "₹2,400" },
+                { name: "Atlantic Salmon Steak", description: "Charred asparagus, saffron beurre blanc", price: "₹1,850" },
+                { name: "Molten Valrhona Chocolate Cake", description: "Madagascar vanilla bean gelato", price: "₹650" }
+              ]
+            }
+          ],
+          best_dishes: ["Wood-Fired Neapolitan Pizza", "Australian Lamb Rack", "Atlantic Salmon Steak"],
+          hours: {
+            monday: { open: "19:00", close: "01:00", closed: false },
+            tuesday: { open: "19:00", close: "01:00", closed: false },
+            wednesday: { open: "19:00", close: "01:00", closed: false },
+            thursday: { open: "19:00", close: "01:00", closed: false },
+            friday: { open: "19:00", close: "02:00", closed: false },
+            saturday: { open: "19:00", close: "02:00", closed: false },
+            sunday: { open: "12:00", close: "01:00", closed: false }
+          },
+          accessibility: { wheelchairAccess: true, brailleMenu: false, hearingLoop: true, largeText: false, note: "Full elevator connectivity between dining levels." },
+          noise_level: "Lively",
+          noise_level_score: 3,
+          vibe_tags: ["Nightlife", "Luxury", "Cocktails", "Date Night"],
+          ambience: "Luxury",
+          cuisine_filters: ["Global", "Italian", "Grill", "Fine Dining"],
+          budget_filter: "₹₹₹₹",
+          distance_km: 4.8,
+          featured: true,
+          trending: true,
+          recently_added: false,
+          approved: true,
+          rating: 4.8,
+          review_count: 410,
+          capacity: 120,
+          available_slots: ["19:00","20:00","21:00","22:00","23:00"]
+        },
+        {
+          name: "Amethyst Café",
+          slug: "wild-garden-amethyst-royapettah",
+          cuisine: "Continental & European Bakery",
+          cuisine_category: "Cafe & Brunch",
+          price_range: "₹₹",
+          price_level: 2,
+          editorial_description: "Set within a lush colonial-era heritage mansion and courtyard garden, Amethyst is Chennai's iconic haven for European pasta, artisanal quiches, and fragrant teas.",
+          short_description: "Garden courtyard cafe in a restored colonial heritage bungalow.",
+          address: "Whites Road, Royapettah",
+          city: "Chennai",
+          phone: "+91 44 4599 1630",
+          email: "contact@wildgardenamethyst.com",
+          website: "https://www.amethystchennai.com",
+          cover_image: "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=1920&q=80",
+          gallery: [
+            "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&q=80",
+            "https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=800&q=80"
+          ],
+          menu: [
+            {
+              section: "Garden Kitchen Favorites",
+              items: [
+                { name: "Spinach & Goat Cheese Quiche", description: "Served with balsamic vinaigrette dressed wild greens", price: "₹420" },
+                { name: "Penne Aglio Olio e Peperoncino", description: "Extra virgin olive oil, garlic slivers, sundried tomatoes", price: "₹490" },
+                { name: "Smoked Chicken Panini", description: "Brie cheese, caramelized onions, homemade ciabatta", price: "₹460" },
+                { name: "Warm Apple Crumble Tart", description: "Salted caramel drizzle, vanilla ice cream", price: "₹380" }
+              ]
+            }
+          ],
+          best_dishes: ["Spinach & Goat Cheese Quiche", "Smoked Chicken Panini", "Warm Apple Crumble Tart"],
+          hours: {
+            monday: { open: "10:00", close: "23:00", closed: false },
+            tuesday: { open: "10:00", close: "23:00", closed: false },
+            wednesday: { open: "10:00", close: "23:00", closed: false },
+            thursday: { open: "10:00", close: "23:00", closed: false },
+            friday: { open: "10:00", close: "23:00", closed: false },
+            saturday: { open: "10:00", close: "23:00", closed: false },
+            sunday: { open: "10:00", close: "23:00", closed: false }
+          },
+          accessibility: { wheelchairAccess: true, brailleMenu: false, hearingLoop: false, largeText: false, note: "Paved garden pathways and ground level seating." },
+          noise_level: "Quiet",
+          noise_level_score: 1,
+          vibe_tags: ["Romantic", "Heritage", "Outdoor Seating", "Coffee"],
+          ambience: "Romantic",
+          cuisine_filters: ["Cafe & Brunch", "Continental", "Italian"],
+          budget_filter: "₹₹",
+          distance_km: 1.8,
+          featured: false,
+          trending: true,
+          recently_added: false,
+          approved: true,
+          rating: 4.7,
+          review_count: 380,
+          capacity: 80,
+          available_slots: ["11:00","13:00","16:00","18:00","19:30","21:00"]
+        },
+        {
+          name: "Balfour Italian Eatery",
+          slug: "balfour-italian-kilpauk",
+          cuisine: "Authentic Italian & Pizza",
+          cuisine_category: "Italian",
+          price_range: "₹₹₹",
+          price_level: 3,
+          editorial_description: "Handcrafted Roman and Neapolitan pizzas baked in a custom stone oven, paired with fresh extruded pastas and decadent artisanal tiramisu.",
+          short_description: "Artisanal stone-baked pizzas & fresh handmade pastas.",
+          address: "24 Balfour Road, Kilpauk",
+          city: "Chennai",
+          phone: "+91 44 4858 2424",
+          email: "ciao@balfoureats.com",
+          website: "https://www.balfoureats.com",
+          cover_image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1920&q=80",
+          gallery: [
+            "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80",
+            "https://images.unsplash.com/photo-1579684947550-22e945225d9a?w=800&q=80"
+          ],
+          menu: [
+            {
+              section: "Pasta Fresca & Pizze",
+              items: [
+                { name: "Burrata Pugliese Pizza", description: "Fresh burrata, heirloom cherry tomatoes, pesto drizzle", price: "₹780" },
+                { name: "Hand-rolled Tagliatelle Funghi", description: "Wild porcini mushroom sauce, parmigiano reggiano", price: "₹680" },
+                { name: "Gnocchi al Gorgonzola", description: "Potato gnocchi, cream of gorgonzola, roasted walnuts", price: "₹640" },
+                { name: "Classic Espresso Tiramisu", description: "Savoiardi ladyfingers, mascarpone, dusting of cocoa", price: "₹450" }
+              ]
+            }
+          ],
+          best_dishes: ["Burrata Pugliese Pizza", "Hand-rolled Tagliatelle Funghi", "Classic Espresso Tiramisu"],
+          hours: {
+            monday: { open: "12:00", close: "23:00", closed: false },
+            tuesday: { open: "12:00", close: "23:00", closed: false },
+            wednesday: { open: "12:00", close: "23:00", closed: false },
+            thursday: { open: "12:00", close: "23:00", closed: false },
+            friday: { open: "12:00", close: "23:30", closed: false },
+            saturday: { open: "12:00", close: "23:30", closed: false },
+            sunday: { open: "12:00", close: "23:00", closed: false }
+          },
+          accessibility: { wheelchairAccess: true, brailleMenu: false, hearingLoop: false, largeText: false, note: "Street parking and wheelchair ramp available." },
+          noise_level: "Moderate",
+          noise_level_score: 2,
+          vibe_tags: ["Italian", "Pizza", "Casual Dining", "Family"],
+          ambience: "Casual",
+          cuisine_filters: ["Italian", "Pizza", "European"],
+          budget_filter: "₹₹₹",
+          distance_km: 3.1,
+          featured: false,
+          trending: false,
+          recently_added: true,
+          approved: true,
+          rating: 4.8,
+          review_count: 142,
+          capacity: 50,
+          available_slots: ["12:30","13:30","19:00","20:00","21:00","21:45"]
+        }
+      ];
+
+      try {
+        // Fetch existing restaurants to avoid duplicates
+        const { data: existing, error: fetchErr } = await supa
+          .from('restaurants')
+          .select('name, slug');
+        
+        const existingNames = new Set((existing || []).map(r => (r.name || '').trim().toLowerCase()));
+        const existingSlugs = new Set((existing || []).map(r => (r.slug || '').trim().toLowerCase()));
+
+        // Filter out any restaurant that already exists
+        const toInsert = DUMMY_LIST.filter(r => 
+          !existingNames.has(r.name.trim().toLowerCase()) && 
+          !existingSlugs.has(r.slug.trim().toLowerCase())
+        );
+
+        if (toInsert.length === 0) {
+          return { count: 0, message: 'All sample restaurants are already present in the database.' };
+        }
+
+        const { data: inserted, error: insertErr } = await supa
+          .from('restaurants')
+          .insert(toInsert)
+          .select();
+
+        if (insertErr) {
+          console.error('[DB] seedDummyRestaurants error:', insertErr);
+          return { count: 0, error: insertErr.message };
+        }
+
+        await this.init(); // Refresh local cache
+        return { count: inserted?.length || 0, restaurants: inserted };
+      } catch (err) {
+        console.error('[DB] seedDummyRestaurants exception:', err);
+        return { count: 0, error: err.message || 'Seeding failed.' };
+      }
+    },
+
     // ── UTILITY ─────────────────────────────────────────────────
 
     getShiftOptions(timeStr) {
