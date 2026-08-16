@@ -14,10 +14,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--sp-20) var(--sp-6) var(--sp-6);
+  padding: calc(var(--nav-height) + var(--sp-6)) var(--sp-4) var(--sp-8);
   background: var(--bg);
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .auth-bg-glow {
@@ -36,11 +37,12 @@
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--r-2xl);
-  padding: var(--sp-10) var(--sp-8);
+  padding: var(--sp-8) var(--sp-7);
   position: relative;
   z-index: 1;
   animation: scaleUp var(--t-slow) ease both;
   box-shadow: var(--shadow-xl);
+  margin: auto 0;
 }
 
 .auth-logo {
