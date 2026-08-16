@@ -22,14 +22,18 @@ create table if not exists public.profiles (
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, email, name, avatar)
+  insert into public.profiles (id, email, name, role, avatar)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'name', ''),
+    coalesce(new.raw_user_meta_data->>'role', 'user'),
     coalesce(new.raw_user_meta_data->>'avatar', '')
   )
-  on conflict (id) do nothing;
+  on conflict (id) do update set
+    name = coalesce(excluded.name, profiles.name),
+    role = coalesce(excluded.role, profiles.role),
+    avatar = coalesce(excluded.avatar, profiles.avatar);
   return new;
 end;
 $$ language plpgsql security definer;

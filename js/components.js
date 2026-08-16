@@ -566,30 +566,35 @@ window.Components = (function () {
     if (!user) return;
 
     const data = {
-      name: document.getElementById('app-name')?.value,
-      cuisine: document.getElementById('app-cuisine')?.value,
-      city: document.getElementById('app-city')?.value,
-      address: document.getElementById('app-address')?.value,
-      phone: document.getElementById('app-phone')?.value,
-      email: document.getElementById('app-email')?.value,
-      priceRange: document.getElementById('app-price')?.value,
-      coverImage: document.getElementById('app-cover')?.value,
-      shortDescription: document.getElementById('app-desc')?.value,
+      name: document.getElementById('app-name')?.value?.trim(),
+      cuisine: document.getElementById('app-cuisine')?.value?.trim(),
+      city: document.getElementById('app-city')?.value?.trim() || 'Chennai',
+      address: document.getElementById('app-address')?.value?.trim(),
+      phone: document.getElementById('app-phone')?.value?.trim(),
+      email: document.getElementById('app-email')?.value?.trim(),
+      priceRange: document.getElementById('app-price')?.value || '₹₹',
+      coverImage: document.getElementById('app-cover')?.value?.trim() || null,
+      shortDescription: document.getElementById('app-desc')?.value?.trim(),
+      userName: user.name || '',
+      userEmail: user.email || ''
     };
 
     const btn = document.getElementById('app-submit-btn');
     if (btn) { btn.classList.add('loading'); btn.disabled = true; }
 
     try {
-      await DB.submitListingApplication(data, user.id);
+      const res = await DB.submitListingApplication(data, user.id);
       if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
       closeModal();
       toast(
         'Application Submitted! 🎉',
-        'Your restaurant listing application has been sent to our admin team. You will be upgraded to Restaurant Owner upon approval.',
+        `Your listing application for "${data.name}" has been sent to our admin team for review & approval.`,
         'success',
         6000
       );
+      if (window.location.hash.startsWith('#/owner') && window.Pages && Pages.Owner) {
+        Pages.Owner.render();
+      }
     } catch (err) {
       if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
       toast('Submission failed', err.message || 'Please try again.', 'error');

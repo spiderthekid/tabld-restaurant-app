@@ -339,7 +339,9 @@ Pages.Auth = (function () {
           email: resEmail,
           priceRange: '₹₹',
           shortDescription: resDesc || `A curated ${resCuisine} restaurant in Chennai.`,
-          coverImage: window._resPhotoDataUrl || null
+          coverImage: window._resPhotoDataUrl || null,
+          userName: name,
+          userEmail: email
         };
       }
 
@@ -357,6 +359,13 @@ Pages.Auth = (function () {
           return;
         }
 
+        // For owner signups, persist application in localStorage as safety net
+        if (role === 'owner' && resData) {
+          try {
+            localStorage.setItem('tabld_pending_owner_app_' + email.trim().toLowerCase(), JSON.stringify(resData));
+          } catch (e) {}
+        }
+
         // Check if email verification is needed
         if (result.needsEmailVerification) {
           const isOwner = (role === 'owner');
@@ -364,14 +373,14 @@ Pages.Auth = (function () {
             <div style="text-align:center;padding:var(--sp-6) var(--sp-2)">
               <div style="font-size:3.5rem;margin-bottom:var(--sp-4)">${isOwner ? '⏳' : '✉️'}</div>
               <h2 style="font-family:var(--font-display);font-size:var(--text-2xl);color:var(--text);margin-bottom:var(--sp-3)">
-                ${isOwner ? 'Application Submitted' : 'Verify Your Email'}
+                ${isOwner ? 'Application Submitted & Verify Email' : 'Verify Your Email'}
               </h2>
               <p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;margin-bottom:var(--sp-2)">
                 We've sent a verification email to <strong>${email}</strong>.<br>
                 Please check your inbox and click the confirmation link to activate your account.
               </p>
               ${isOwner ? `<p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;margin-bottom:var(--sp-6);padding:var(--sp-4);background:var(--bg-elevated);border-radius:var(--r-lg);border:1px solid var(--border)">
-                🏪 Once verified, your restaurant listing will be reviewed by our team. You'll be notified when it's approved and live on Tabld.
+                🏪 Your restaurant listing application for <strong>${resData.name}</strong> will be submitted for admin review upon verification.
               </p>` : ''}
               <button class="btn btn-primary btn-lg btn-w-full" onclick="navigate('/login')">Go to Sign In</button>
             </div>
@@ -379,9 +388,13 @@ Pages.Auth = (function () {
           return;
         }
 
-        // Immediate session — show owner awaiting approval screen or user onboarding
+        // Immediate session — submit application to DB and show owner awaiting approval screen
         if (role === 'owner' && resData) {
-          await DB.submitListingApplication(resData, result.user.id);
+          try {
+            await DB.submitListingApplication(resData, result.user.id);
+          } catch (subErr) {
+            console.warn('[Register] submitListingApplication warning:', subErr);
+          }
           // Show awaiting approval screen in-place (no navigation to user module)
           _showOwnerAwaitingApproval(resData.name, name);
         } else {

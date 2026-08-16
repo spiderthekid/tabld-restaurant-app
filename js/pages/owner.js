@@ -66,8 +66,7 @@ Pages.Owner = (function () {
   // ─── PROFILE TAB ─────────────────────────────────────────────
   async function renderOwnerProfile(r) {
     const user = Auth.getCurrentUser();
-    const allApps = await DB.getAllApplications();
-    const pendingApp = !r ? allApps.find(a => a.userId === user.id && a.status === 'pending') : null;
+    const pendingApp = !r ? await DB.getPendingApplicationForUser(user.id) : null;
     const contentEl = document.getElementById('owner-content');
 
     if (!r && pendingApp) {

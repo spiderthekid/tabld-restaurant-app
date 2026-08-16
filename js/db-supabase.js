@@ -689,9 +689,25 @@ window.DB = (function () {
           .select('*')
           .eq('status', 'pending')
           .order('created_at', { ascending: false });
-        if (error) return [];
+        if (error) { console.warn('[DB] getPendingApplications error:', error); return []; }
         return (data || []).map(_mapApplication);
       } catch (e) { return []; }
+    },
+
+    async getPendingApplicationForUser(userId) {
+      if (!window.supa || !userId) return null;
+      try {
+        const { data, error } = await supa
+          .from('listing_applications')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (error || !data) return null;
+        return _mapApplication(data);
+      } catch (e) { return null; }
     },
 
     async getAllApplications() {
@@ -708,20 +724,24 @@ window.DB = (function () {
 
     async submitListingApplication(appData, userId) {
       if (!window.supa) return null;
-      const user = await this.getUserById(userId);
+      let user = null;
+      if (userId) {
+        try { user = await this.getUserById(userId); } catch (e) {}
+      }
 
-      // Upload cover photo to storage if a data URL was provided
+      // Process cover photo (upload to Supabase Storage if data URL, else fallback to Unsplash)
       let coverImageUrl = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&q=70';
-      if (appData.coverImage && appData.coverImage.startsWith('data:')) {
+      if (appData.coverImage && typeof appData.coverImage === 'string' && appData.coverImage.startsWith('data:')) {
         try {
           const [meta, b64] = appData.coverImage.split(',');
-          const mime   = meta.match(/:(.*?);/)[1];
+          const mimeMatch = meta.match(/:(.*?);/);
+          const mime   = mimeMatch ? mimeMatch[1] : 'image/jpeg';
           const binary = atob(b64);
           const bytes  = new Uint8Array(binary.length);
           for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
           const blob = new Blob([bytes], { type: mime });
           const ext  = mime.split('/')[1] || 'jpg';
-          const path = `applications/${userId}-${Date.now()}.${ext}`;
+          const path = `applications/${userId || 'app'}-${Date.now()}.${ext}`;
           const { error: upErr } = await supa.storage
             .from('restaurant-images')
             .upload(path, blob, { contentType: mime, upsert: true });
@@ -729,39 +749,46 @@ window.DB = (function () {
             const { data: pubData } = supa.storage.from('restaurant-images').getPublicUrl(path);
             if (pubData?.publicUrl) coverImageUrl = pubData.publicUrl;
           } else {
-            console.warn('[DB] Cover image upload failed, using default:', upErr.message);
+            console.warn('[DB] Cover image upload warning (using fallback):', upErr.message);
           }
         } catch (imgErr) {
-          console.warn('[DB] Cover image processing error:', imgErr);
+          console.warn('[DB] Cover image processing warning:', imgErr);
         }
-      } else if (appData.coverImage) {
+      } else if (appData.coverImage && typeof appData.coverImage === 'string' && appData.coverImage.startsWith('http')) {
         coverImageUrl = appData.coverImage;
       }
 
       const row = {
-        user_id:           userId,
-        user_name:         user?.name || '',
-        user_email:        user?.email || '',
+        user_id:           userId || null,
+        user_name:         appData.userName || user?.name || 'Restaurant Owner',
+        user_email:        appData.userEmail || user?.email || appData.email || '',
         name:              appData.name,
-        cuisine:           appData.cuisine,
+        cuisine:           appData.cuisine || 'Specialty',
         city:              appData.city || 'Chennai',
-        address:           appData.address,
-        phone:             appData.phone,
-        email:             appData.email,
+        address:           appData.address || '',
+        phone:             appData.phone || '',
+        email:             appData.email || appData.userEmail || '',
         price_range:       appData.priceRange || '₹₹',
-        short_description: appData.shortDescription || '',
+        short_description: appData.shortDescription || `A curated ${appData.cuisine || ''} dining venue in ${appData.city || 'Chennai'}.`,
         cover_image:       coverImageUrl,
         status:            'pending'
       };
+
       try {
         const { data, error } = await supa
           .from('listing_applications')
           .insert([row])
           .select()
           .single();
-        if (error) { console.error('[DB] submitListingApplication error:', error); return null; }
+        if (error) {
+          console.error('[DB] submitListingApplication insert error:', error);
+          return null;
+        }
         return _mapApplication(data);
-      } catch (e) { return null; }
+      } catch (e) {
+        console.error('[DB] submitListingApplication catch:', e);
+        return null;
+      }
     },
 
     async approveListingApplication(appId) {

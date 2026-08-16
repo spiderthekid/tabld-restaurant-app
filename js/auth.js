@@ -60,6 +60,7 @@ window.Auth = (function () {
       const userEmail = (authUser.email || '').trim().toLowerCase();
       const isAutoAdmin = adminEmail && userEmail === adminEmail;
 
+      let finalProfile = null;
       if (!profile || error) {
         // Create initial profile
         const newProfile = {
@@ -71,14 +72,14 @@ window.Auth = (function () {
           onboarding_completed: false
         };
         const { data: created } = await supa.from('profiles').upsert([newProfile]).select().single();
-        if (created) return DB.getUserById(authUser.id);
+        if (created) finalProfile = await DB.getUserById(authUser.id);
       } else {
         // Auto-promote if email matches configured admin email
         if (isAutoAdmin && profile.role !== 'admin') {
           await supa.from('profiles').update({ role: 'admin' }).eq('id', authUser.id);
           profile.role = 'admin';
         }
-        return {
+        finalProfile = {
           id: profile.id,
           name: profile.name,
           email: profile.email,
@@ -91,6 +92,25 @@ window.Auth = (function () {
           savedRestaurants: profile.saved_restaurants || []
         };
       }
+
+      // Check if this user had a deferred restaurant listing application from registration
+      try {
+        const pendingKey = 'tabld_pending_owner_app_' + userEmail;
+        const savedAppJson = localStorage.getItem(pendingKey);
+        if (savedAppJson && window.DB) {
+          const appData = JSON.parse(savedAppJson);
+          appData.userName = finalProfile?.name || authUser.user_metadata?.name || '';
+          appData.userEmail = authUser.email;
+          const subRes = await DB.submitListingApplication(appData, authUser.id);
+          if (subRes) {
+            localStorage.removeItem(pendingKey);
+          }
+        }
+      } catch (appErr) {
+        console.warn('[Auth] Pending app submission error:', appErr);
+      }
+
+      return finalProfile;
     } catch (err) {
       console.error('[Auth] _syncProfile error:', err);
     }
@@ -169,13 +189,14 @@ window.Auth = (function () {
         return { ok: false, error: 'Password must be at least 8 characters.' };
       }
 
+      const cleanEmail = email.trim().toLowerCase();
       const adminEmail = (window.TABLD_ADMIN_EMAIL || '').trim().toLowerCase();
-      const finalRole = (adminEmail && email.trim().toLowerCase() === adminEmail) ? 'admin' : role;
+      const finalRole = (adminEmail && cleanEmail === adminEmail) ? 'admin' : role;
       const avatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=e8732a&textColor=ffffff`;
 
       try {
         const { data, error } = await supa.auth.signUp({
-          email: email.trim(),
+          email: cleanEmail,
           password: password,
           options: {
             data: {
@@ -187,7 +208,13 @@ window.Auth = (function () {
         });
 
         if (error) {
-          return { ok: false, error: error.message || 'Registration failed.' };
+          let msg = error.message || 'Registration failed.';
+          if (msg.toLowerCase().includes('rate limit')) {
+            msg = 'Email rate limit reached on Supabase free tier. In your Supabase dashboard → Auth → Providers → Email, turn OFF "Confirm email" to enable instant signups without email limits.';
+          } else if (msg.toLowerCase().includes('already registered')) {
+            msg = 'An account with this email already exists. Please sign in instead.';
+          }
+          return { ok: false, error: msg };
         }
 
         const authUser = data.user;
@@ -203,7 +230,7 @@ window.Auth = (function () {
           await supa.from('profiles').upsert([{
             id: authUser.id,
             name: name.trim(),
-            email: email.trim(),
+            email: cleanEmail,
             role: finalRole,
             avatar: avatar,
             onboarding_completed: false
@@ -215,7 +242,7 @@ window.Auth = (function () {
         const userObj = {
           id: authUser.id,
           name: name.trim(),
-          email: email.trim(),
+          email: cleanEmail,
           role: finalRole,
           avatar: avatar,
           onboardingCompleted: false
