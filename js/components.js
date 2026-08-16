@@ -204,7 +204,6 @@ window.Components = (function () {
     s.classList.toggle('open', willOpen);
     if (b) b.classList.toggle('active', willOpen);
   }
-  };
 
   // ─── Restaurant Card ──────────────────────────────────────────
   function restaurantCard(r, opts = {}) {
