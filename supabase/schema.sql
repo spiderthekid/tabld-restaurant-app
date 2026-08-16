@@ -162,6 +162,44 @@ drop policy if exists "Allow profile insertion on signup" on public.profiles;
 create policy "Allow profile insertion on signup"
   on public.profiles for insert with check (auth.uid() = id);
 
+drop policy if exists "Admins can update any profile" on public.profiles;
+create policy "Admins can update any profile"
+  on public.profiles for update using (
+    exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+  );
+
+-- RPC for atomic admin role update
+create or replace function public.admin_update_user_role(target_user_id uuid, new_role text, new_restaurant_id int default null)
+returns json as $$
+declare
+  caller_role text;
+  result json;
+begin
+  select role into caller_role from public.profiles where id = auth.uid();
+  if caller_role != 'admin' then
+    raise exception 'Unauthorized: Only admins can change user roles';
+  end if;
+
+  update public.profiles
+  set role = new_role,
+      restaurant_id = new_restaurant_id
+  where id = target_user_id;
+
+  if new_role = 'owner' and new_restaurant_id is not null then
+    update public.restaurants
+    set owner_id = target_user_id
+    where id = new_restaurant_id;
+  elsif new_role != 'owner' then
+    update public.restaurants
+    set owner_id = null
+    where owner_id = target_user_id;
+  end if;
+
+  select row_to_json(p) into result from public.profiles p where id = target_user_id;
+  return result;
+end;
+$$ language plpgsql security definer;
+
 -- RESTAURANTS POLICIES
 drop policy if exists "Anyone can view approved restaurants" on public.restaurants;
 create policy "Anyone can view approved restaurants"

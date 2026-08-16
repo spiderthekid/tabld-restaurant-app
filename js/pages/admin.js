@@ -624,16 +624,15 @@ Pages.Admin = (function () {
       document.getElementById('role-editor-modal')?.remove();
 
       const allRestaurants = await DB.getAllRestaurants();
-      const restaurants    = allRestaurants.filter(r => r.approved);
 
       const modal = document.createElement('div');
       modal.id = 'role-editor-modal';
       modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(9,9,11,0.85);backdrop-filter:blur(8px);padding:20px';
       modal.innerHTML = `
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:500px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.6);display:flex;flex-direction:column;gap:20px;max-height:90vh;overflow-y:auto">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:520px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.6);display:flex;flex-direction:column;gap:20px;max-height:90vh;overflow-y:auto">
           <div style="display:flex;align-items:center;justify-content:space-between">
             <div>
-              <h3 style="font-family:var(--font-display);font-size:1.25rem;color:var(--text);margin:0">Edit Role</h3>
+              <h3 style="font-family:var(--font-display);font-size:1.25rem;color:var(--text);margin:0">Edit User Role</h3>
               <p style="font-size:0.75rem;color:var(--text-muted);margin:4px 0 0">${userName}</p>
             </div>
             <button onclick="document.getElementById('role-editor-modal').remove()" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:4px;line-height:1">&times;</button>
@@ -642,46 +641,40 @@ Pages.Admin = (function () {
           <div style="display:flex;flex-direction:column;gap:10px">
             <p style="font-size:0.8rem;color:var(--text-secondary);margin:0">Select new role:</p>
             <div style="display:flex;gap:10px;flex-wrap:wrap">
-              <button onclick="applyRole('${userId}','user','${currentRole}')"
+              <button type="button" onclick="applyRole('${userId}','user','${currentRole}')"
                 style="flex:1;padding:12px;border-radius:10px;border:2px solid ${currentRole==='user'?'var(--primary)':'var(--border)'};background:${currentRole==='user'?'var(--primary-10)':'var(--bg-surface)'};color:var(--text);cursor:pointer;font-family:inherit;font-weight:600;font-size:0.85rem">
                 🍽️ Diner
               </button>
-              <button onclick="applyRole('${userId}','admin','${currentRole}')"
+              <button type="button" onclick="applyRole('${userId}','admin','${currentRole}')"
                 style="flex:1;padding:12px;border-radius:10px;border:2px solid ${currentRole==='admin'?'var(--primary)':'var(--border)'};background:${currentRole==='admin'?'var(--primary-10)':'var(--bg-surface)'};color:var(--text);cursor:pointer;font-family:inherit;font-weight:600;font-size:0.85rem">
                 🛡️ Admin
               </button>
             </div>
-            <p style="font-size:0.75rem;color:var(--text-muted);margin:4px 0 0">To assign Owner, pick a restaurant below:</p>
+            <p style="font-size:0.75rem;color:var(--text-muted);margin:8px 0 0">Or click a restaurant to assign this user as its <strong>Owner</strong>:</p>
           </div>
 
           <div>
-            <input type="text" placeholder="Search restaurants…" oninput="document.querySelectorAll('.rp-item').forEach(el=>{el.style.display=el.dataset.name.toLowerCase().includes(this.value.toLowerCase())?'':'none'})"
+            <input type="text" id="role-search-input" placeholder="Search restaurant name or cuisine…" oninput="document.querySelectorAll('.rp-item').forEach(el=>{el.style.display=el.dataset.name.toLowerCase().includes(this.value.toLowerCase())?'':'none'})"
               style="width:100%;padding:10px 14px;background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.85rem;font-family:inherit;box-sizing:border-box;margin-bottom:10px">
-            <div style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto">
-              ${restaurants.length === 0
-                ? '<p style="text-align:center;color:var(--text-muted);font-size:0.85rem;padding:20px 0">No approved restaurants yet.</p>'
-                : restaurants.map(r => `
-                    <button class="rp-item" data-name="${(r.name||'').replace(/"/g,'')}" onclick="assignOwnerRole('${userId}','${currentRole}',${r.id},'${(r.name||'').replace(/'/g,"\\'")}','${userName.replace(/'/g,"\\'")}')">
+            <div style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;padding-right:4px">
+              ${allRestaurants.length === 0
+                ? '<p style="text-align:center;color:var(--text-muted);font-size:0.85rem;padding:20px 0">No restaurants found in database.</p>'
+                : allRestaurants.map(r => `
+                    <button type="button" class="rp-item" data-name="${(r.name||'').replace(/"/g,'')} ${(r.cuisine||'').replace(/"/g,'')}" onclick="assignOwnerRole('${userId}','${currentRole}',${r.id},'${(r.name||'').replace(/'/g,"\\'")}','${userName.replace(/'/g,"\\'")}')"
+                      style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;cursor:pointer;width:100%;font-family:inherit;transition:border-color 0.15s;text-align:left">
                       <img src="${r.coverImage}" onerror="this.src='https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=100&q=50'" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0">
-                      <div style="flex:1;text-align:left;min-width:0">
+                      <div style="flex:1;min-width:0">
                         <div style="font-weight:600;font-size:0.85rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
-                        <div style="font-size:0.75rem;color:var(--text-muted)">${r.cuisine} &middot; ${r.city}</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted)">${r.cuisine} · ${r.city} ${r.approved ? '' : '· (Pending Review)'}</div>
                       </div>
-                      <span style="font-size:0.75rem;color:var(--text-muted)">→</span>
+                      <span style="font-size:0.75rem;color:var(--primary-light);font-weight:600">Assign →</span>
                     </button>
                   `).join('')}
             </div>
           </div>
-          <button onclick="document.getElementById('role-editor-modal').remove()" style="padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;font-family:inherit;font-size:0.85rem">Cancel</button>
+          <button type="button" onclick="document.getElementById('role-editor-modal').remove()" style="padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;font-family:inherit;font-size:0.85rem">Cancel</button>
         </div>
       `;
-
-      // Style the restaurant buttons
-      modal.querySelectorAll && setTimeout(() => {
-        modal.querySelectorAll('.rp-item').forEach(btn => {
-          btn.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;cursor:pointer;width:100%;font-family:inherit;transition:border-color 0.15s';
-        });
-      }, 0);
 
       document.body.appendChild(modal);
       modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
@@ -690,23 +683,24 @@ Pages.Admin = (function () {
     window.applyRole = async function(userId, newRole, currentRole) {
       document.getElementById('role-editor-modal')?.remove();
       if (newRole === currentRole) return;
-      await DB.updateProfile(userId, { role: newRole, restaurantId: null });
-      if (currentRole === 'owner') await DB.clearRestaurantOwner(userId);
-      Components.toast('Role Updated', `Role changed to ${newRole}.`, 'success');
+      try {
+        await DB.adminUpdateUserRole(userId, newRole, null);
+        Components.toast('Role Updated', `User role set to ${newRole}.`, 'success');
+      } catch (err) {
+        Components.toast('Update Failed', err.message || 'Could not update role.', 'error');
+      }
       if (window.adminSection) adminSection('users');
     };
 
     window.assignOwnerRole = async function(userId, currentRole, restaurantId, restaurantName, userName) {
       document.getElementById('role-editor-modal')?.remove();
       try {
-        await DB.updateProfile(userId, { role: 'owner', restaurantId: restaurantId });
-        await DB.setRestaurantOwner(restaurantId, userId);
-        if (currentRole === 'owner') await DB.clearRestaurantOwner(userId);
-        Components.toast('Owner Assigned! 🏪', `${userName} is now owner of "${restaurantName}". They get the Owner module on next sign-in.`, 'success', 6000);
-        if (window.adminSection) adminSection('users');
+        await DB.adminUpdateUserRole(userId, 'owner', restaurantId);
+        Components.toast('Owner Assigned! 🏪', `${userName} is now the owner of "${restaurantName}". They will see the Owner module.`, 'success', 6000);
       } catch(err) {
-        Components.toast('Error', err.message || 'Failed to assign owner.', 'error');
+        Components.toast('Assignment Failed', err.message || 'Failed to assign owner.', 'error');
       }
+      if (window.adminSection) adminSection('users');
     };
 
 

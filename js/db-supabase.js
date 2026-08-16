@@ -363,6 +363,51 @@ window.DB = (function () {
       } catch (e) { console.warn('[DB] clearRestaurantOwner error:', e); }
     },
 
+    // Admin action: update a user's role and link/unlink restaurant
+    async adminUpdateUserRole(targetUserId, newRole, restaurantId = null) {
+      if (!window.supa || !targetUserId) return null;
+      
+      // 1. Try Supabase RPC if present
+      try {
+        const { data: rpcData, error: rpcErr } = await supa.rpc('admin_update_user_role', {
+          target_user_id: targetUserId,
+          new_role: newRole,
+          new_restaurant_id: restaurantId ? Number(restaurantId) : null
+        });
+        if (!rpcErr && rpcData) {
+          return _mapProfile(rpcData);
+        }
+      } catch (e) {}
+
+      // 2. Direct database update fallback
+      try {
+        const updatePayload = {
+          role: newRole,
+          restaurant_id: restaurantId ? Number(restaurantId) : null
+        };
+        const { data, error } = await supa
+          .from('profiles')
+          .update(updatePayload)
+          .eq('id', targetUserId)
+          .select()
+          .single();
+
+        if (newRole === 'owner' && restaurantId) {
+          await this.setRestaurantOwner(restaurantId, targetUserId);
+        } else if (newRole !== 'owner') {
+          await this.clearRestaurantOwner(targetUserId);
+        }
+
+        if (error) {
+          console.error('[DB] adminUpdateUserRole profile error:', error);
+        }
+        return data ? _mapProfile(data) : { id: targetUserId, role: newRole, restaurantId };
+      } catch (err) {
+        console.error('[DB] adminUpdateUserRole catch:', err);
+        return null;
+      }
+    },
+
     async searchRestaurants(query, filters = {}) {
       if (!window.supa) {
         let results = _cachedApprovedRestaurants;
