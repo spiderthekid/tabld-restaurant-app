@@ -337,6 +337,32 @@ window.DB = (function () {
       } catch (e) { return null; }
     },
 
+    // Set a restaurant's owner_id to a given user
+    async setRestaurantOwner(restaurantId, userId) {
+      if (!window.supa) return null;
+      try {
+        const { data, error } = await supa
+          .from('restaurants')
+          .update({ owner_id: userId })
+          .eq('id', Number(restaurantId))
+          .select()
+          .single();
+        if (error) { console.error('[DB] setRestaurantOwner error:', error); return null; }
+        return _mapRestaurant(data);
+      } catch (e) { console.error('[DB] setRestaurantOwner catch:', e); return null; }
+    },
+
+    // Clear owner_id for all restaurants currently owned by userId
+    async clearRestaurantOwner(userId) {
+      if (!window.supa) return;
+      try {
+        await supa
+          .from('restaurants')
+          .update({ owner_id: null })
+          .eq('owner_id', userId);
+      } catch (e) { console.warn('[DB] clearRestaurantOwner error:', e); }
+    },
+
     async searchRestaurants(query, filters = {}) {
       if (!window.supa) {
         let results = _cachedApprovedRestaurants;

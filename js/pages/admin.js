@@ -388,7 +388,7 @@ Pages.Admin = (function () {
                   <td>${u.phone || '—'}</td>
                   <td>${u.joinedAt || 'Recent'}</td>
                   <td>
-                    <select class="form-select" style="width:auto;font-size:var(--text-xs);padding:2px 8px" onchange="changeUserRole('${u.id}', this.value)">
+                    <select class="form-select" data-user-id="${u.id}" style="width:auto;font-size:var(--text-xs);padding:2px 8px" onchange="changeUserRole('${u.id}', this.value, '${u.role}')">
                       <option value="user" ${u.role==='user'?'selected':''}>Diner</option>
                       <option value="owner" ${u.role==='owner'?'selected':''}>Owner</option>
                       <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
@@ -621,9 +621,92 @@ Pages.Admin = (function () {
       if (window.adminSection) adminSection(_section);
     };
 
-    window.changeUserRole = async function(userId, newRole) {
-      await DB.updateProfile(userId, { role: newRole });
+    window.changeUserRole = async function(userId, newRole, currentRole) {
+      if (newRole === 'owner') {
+        // Show restaurant picker modal instead of immediately changing role
+        _openOwnerRestaurantPicker(userId);
+        // Reset the select back to current value — modal will handle the change
+        const sel = document.querySelector(`select[data-user-id="${userId}"]`);
+        if (sel) sel.value = currentRole || 'user';
+        return;
+      }
+      await DB.updateProfile(userId, { role: newRole, restaurantId: null });
+      // If downgrading from owner, remove their owner_id from the restaurant
+      if (currentRole === 'owner') {
+        await DB.clearRestaurantOwner(userId);
+      }
       Components.toast('Role Updated', `User role set to ${newRole}.`, 'success');
+      renderUsers();
+    };
+
+    window._openOwnerRestaurantPicker = async function(userId) {
+      document.getElementById('owner-picker-modal')?.remove();
+
+      const restaurants = await DB.getAllRestaurants();
+      const approved    = restaurants.filter(r => r.approved);
+
+      const modal = document.createElement('div');
+      modal.id = 'owner-picker-modal';
+      modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(9,9,11,0.8);backdrop-filter:blur(8px);padding:var(--sp-5);animation:fadeIn 0.15s ease';
+      modal.innerHTML = `
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-2xl);padding:var(--sp-7);max-width:520px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.6);animation:scaleIn 0.18s cubic-bezier(0.34,1.56,0.64,1);display:flex;flex-direction:column;gap:var(--sp-5);max-height:85vh">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <h3 style="font-family:var(--font-display);font-size:var(--text-xl);color:var(--text);margin:0">Assign Restaurant</h3>
+              <p style="font-size:var(--text-xs);color:var(--text-muted);margin:var(--sp-1) 0 0">Select the restaurant this user will manage as owner</p>
+            </div>
+            <button onclick="document.getElementById('owner-picker-modal').remove()" style="background:none;border:none;color:var(--text-muted);font-size:1.4rem;cursor:pointer;line-height:1;padding:var(--sp-1)">×</button>
+          </div>
+
+          <input type="text" id="owner-picker-search" placeholder="Search restaurants…" oninput="filterOwnerPicker(this.value)"
+            style="width:100%;padding:var(--sp-3) var(--sp-4);background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-lg);color:var(--text);font-size:var(--text-sm);font-family:inherit;box-sizing:border-box" autofocus>
+
+          <div id="owner-picker-list" style="display:flex;flex-direction:column;gap:var(--sp-2);overflow-y:auto;max-height:340px;padding-right:4px">
+            ${approved.length === 0 ? `<div style="text-align:center;padding:var(--sp-8);color:var(--text-muted);font-size:var(--text-sm)">No approved restaurants found.</div>` : ''}
+            ${approved.map(r => `
+              <button class="owner-picker-item" data-id="${r.id}" data-name="${r.name.replace(/"/g,'&quot;')}" onclick="selectOwnerRestaurant('${userId}', ${r.id}, '${r.name.replace(/'/g, "\\'")}')"
+                style="display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-3) var(--sp-4);background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-lg);cursor:pointer;text-align:left;width:100%;transition:border-color 0.15s,background 0.15s;font-family:inherit">
+                <img src="${r.coverImage}" alt="${r.name}" style="width:44px;height:44px;border-radius:var(--r-md);object-fit:cover;flex-shrink:0" onerror="this.src='https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=100&q=50'">
+                <div style="flex:1;min-width:0">
+                  <div style="font-weight:600;font-size:var(--text-sm);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
+                  <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:2px">${r.cuisine} · ${r.city} · ${r.priceRange}</div>
+                  ${r.ownerId ? `<div style="font-size:var(--text-xs);color:var(--warning);margin-top:2px">⚠ Already has an owner</div>` : ''}
+                </div>
+                <span style="font-size:0.75rem;color:var(--text-muted)">→</span>
+              </button>
+            `).join('')}
+          </div>
+
+          <button onclick="document.getElementById('owner-picker-modal').remove()" class="btn btn-ghost btn-w-full">Cancel</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+      window.filterOwnerPicker = function(q) {
+        const items = document.querySelectorAll('.owner-picker-item');
+        const lq    = q.toLowerCase();
+        items.forEach(item => {
+          const name = (item.dataset.name || '').toLowerCase();
+          item.style.display = name.includes(lq) ? '' : 'none';
+        });
+      };
+
+      window.selectOwnerRestaurant = async function(uid, restaurantId, restaurantName) {
+        document.getElementById('owner-picker-modal')?.remove();
+        const btn = document.querySelector(`select[data-user-id="${uid}"]`);
+
+        try {
+          // 1. Update profile: role = owner, restaurant_id = restaurantId
+          await DB.updateProfile(uid, { role: 'owner', restaurantId: restaurantId });
+          // 2. Update restaurants.owner_id
+          await DB.setRestaurantOwner(restaurantId, uid);
+          Components.toast('Owner Assigned! 🏪', `User is now the owner of "${restaurantName}". They'll see the Owner module on next login.`, 'success', 6000);
+          renderUsers();
+        } catch(err) {
+          Components.toast('Error', err.message || 'Failed to assign owner.', 'error');
+        }
+      };
     };
 
     window.toggleAiVisibility = function() {
